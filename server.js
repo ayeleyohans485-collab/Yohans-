@@ -53,7 +53,7 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
 
   if (!usersData[userId]) {
     usersData[userId] = { balance: 10.00, referrals: 0, referredBy: null };
-    isNewUser = true;
+    { text: '🎮 Open Yohans Bingo Mini App', web_app: { url: 'https://yohans-vm77.onrender.com' } },
 
     if (referrerId && referrerId != userId && usersData[referrerId]) {
       usersData[userId].referredBy = referrerId;
