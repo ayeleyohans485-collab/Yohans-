@@ -9,13 +9,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_USERNAME = '@Yohans12121';
 
 const TelegramBotConstructor = TelegramBot.default || TelegramBot;
-const bot = new TelegramBotConstructor(BOT_TOKEN, { 
-  polling: {
-    params: {
-      drop_pending_updates: true
-    }
-  } 
-});
+const bot = new TelegramBotConstructor(BOT_TOKEN, { polling: true });
 
 const usersData = {};
 
