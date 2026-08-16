@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '8913995743:AAFGEMIzIqReHMvDLI70FiceOdS_XjBJiks';
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_USERNAME = '@Yohans12121';
 
 const TelegramBotConstructor = TelegramBot.default || TelegramBot;
