@@ -62,8 +62,6 @@ bot.onText(/\/start(?:is+ref_(\d+))?/, async (msg, match) => {
         }
     }
 
-    const webAppUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.id.repl.co` : 'https://yohans-vm77.onrender.com';
-
     const mainKeyboard = {
         reply_markup: {
             keyboard: [
@@ -160,50 +158,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Yohans Bingo Server running on port ${PORT}`);
 });
-    );
-  } else if (text === "👥 Invite (ጋብዝ)") {
-    try {
-      const botInfo = await bot.getMe();
-      const inviteLink = `https://t.me/${botInfo.username}?start=ref_${userId}`;
-      const user = usersData[userId];
-      bot.sendMessage(
-        chatId,
-        `👥 **የመጋበዣ ሊንክዎ:**\n${inviteLink}\n\n🎁 ይህን ሊንክ ለጓደኞችዎ ይላኩ! እርሶም ሆነ እነሱ **10.00 ETB** ያገኛሉ።\n\nየጋበዟቸው ሰዎች ብዛት: ${user.referrals}`
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  }
-});
-
-app.post('/api/buy-card', (req, res) => {
-  const { userId, totalCards, pricePerCard } = req.body;
-
-  if (!usersData[userId]) {
-    return res.status(400).json({ success: false, message: "User not found" });
-  }
-
-  const numberOfCards = parseInt(totalCards) || 200;
-  const cardPrice = parseFloat(pricePerCard) || 10.00;
-
-  const totalCost = numberOfCards * cardPrice;
-  const commission = totalCost * 0.20;
-
-  if (usersData[userId].balance < totalCost) {
-    return res.status(400).json({ success: false, message: "Insufficient balance for 200 cards" });
-  }
-
-  usersData[userId].balance -= totalCost;
-
-  res.json({
-    success: true,
-    totalCards: numberOfCards,
-    totalCost: totalCost,
-    commissionDeducted: commission,
-    newBalance: usersData[userId].balance,
-    message: "200 cards processed at game start with 20% commission successfully!"
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Yohans Bingo Server running on port ${PORT}`));
