@@ -10,7 +10,6 @@ const CHANNEL_USERNAME = '@Yohans12121';
 
 const TelegramBotConstructor = TelegramBot.default || TelegramBot;
 const bot = new TelegramBotConstructor(BOT_TOKEN, { polling: true });
-
 const usersData = {};
 
 async function isUserInChannel(userId) {
