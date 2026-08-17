@@ -1,6 +1,7 @@
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -12,7 +13,8 @@ if (!BOT_TOKEN) {
     process.exit(1);
 }
 
-// 1. Mini App static ፋይሎችን ማስተናገጃ (Not Found እንዳይል)
+// 1. Static ፋይሎችን ማስተናገጃ (root እና public ፎልደርን በስራ ላይ ያውላል)
+app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
@@ -124,9 +126,18 @@ app.post('/api/buy-card', (req, res) => {
     return res.json({ success: true, newBalance: usersData[userId].balance });
 });
 
-// 8. Mini App Single-Page Routing (Not Found ችግርን ሙሉ በሙሉ ይፈታል)
+// 8. index.html የትም ቦታ ቢሆን ፈልጎ የሚከፍት አስተማማኝ Route
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    const publicIndexPath = path.join(__dirname, 'public', 'index.html');
+    const rootIndexPath = path.join(__dirname, 'index.html');
+
+    if (fs.existsSync(publicIndexPath)) {
+        res.sendFile(publicIndexPath);
+    } else if (fs.existsSync(rootIndexPath)) {
+        res.sendFile(rootIndexPath);
+    } else {
+        res.status(404).send('index.html file not found in root or public directory!');
+    }
 });
 
 // 9. ሰርቨሩን ማስነሳት
