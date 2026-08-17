@@ -7,13 +7,14 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_USERNAME = '@Yohans12121';
+const WEB_APP_URL = 'https://yohans-xm77.onrender.com';
 
 if (!BOT_TOKEN) {
     console.error("Error: BOT_TOKEN is not set in environment variables!");
     process.exit(1);
 }
 
-// 1. Static ፋይሎችን ማስተናገጃ (root እና public ፎልደርን በስራ ላይ ያውላል)
+// 1. Static ፋይሎችን ማስተናገጃ
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -38,7 +39,7 @@ async function isUserInChannel(userId) {
     }
 }
 
-// 5. /start Command Handling (ከReferral Link እና Channel Check ጋር)
+// 5. /start Command Handling
 bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -77,16 +78,15 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     }
 
     const mainKeyboard = {
-    reply_markup: {
-        keyboard: [
-            [{ text: '🎮 Open Yohans Bingo Mini App', web_app: { url: 'https://yohans-vn77.onrender.com' } }],
-            [{ text: '💳 My Balance (የእኔ ሒሳብ)' }, { text: '💰 Deposit (ገንዘብ ለማስገባት)' }],
-            [{ text: '👥 Invite (ጋብዝ)' }]
-        ],
-        resize_keyboard: true
-    }
-};
-
+        reply_markup: {
+            keyboard: [
+                [{ text: "🎮 Open Yohans Bingo Mini App", web_app: { url: WEB_APP_URL } }],
+                [{ text: "💳 My Balance (የእኔ ሂሳብ)" }, { text: "📥 Deposit (ገንዘብ ያስገቡ)" }],
+                [{ text: "👥 Invite (ጋብዝ)" }]
+            ],
+            resize_keyboard: true
+        }
+    };
 
     bot.sendMessage(chatId, `🎮 **ወደ Yohans Bingo ጨዋታ እንኳን ደህና መጡ!**`, mainKeyboard);
 });
@@ -127,18 +127,13 @@ app.post('/api/buy-card', (req, res) => {
     return res.json({ success: true, newBalance: usersData[userId].balance });
 });
 
-// 8. index.html የትም ቦታ ቢሆን ፈልጎ የሚከፍት አስተማማኝ Route
-app.get('*', (req, res) => {
-    const publicIndexPath = path.join(__dirname, 'public', 'index.html');
-    const rootIndexPath = path.join(__dirname, 'index.html');
+// 8. የ Mini App HTML ገጽ ማቅረቢያ (Root እና ማንኛውንም Route ይይዛል)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-    if (fs.existsSync(publicIndexPath)) {
-        res.sendFile(publicIndexPath);
-    } else if (fs.existsSync(rootIndexPath)) {
-        res.sendFile(rootIndexPath);
-    } else {
-        res.status(404).send('index.html file not found in root or public directory!');
-    }
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 9. ሰርቨሩን ማስነሳት
