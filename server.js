@@ -78,6 +78,8 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
 
     const mainKeyboard = {
         reply_markup: {
+                const mainKeyboard = {
+        reply_markup: {
             keyboard: [
                 [{ text: "🎮 Open Yohans Bingo Mini App", web_app: { url: "https://yohans-xm77.onrender.com" } }],
                 [{ text: "💳 My Balance (የእኔ ሂሳብ)" }, { text: "📥 Deposit (ገንዘብ ያስገቡ)" }],
@@ -86,6 +88,7 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
             resize_keyboard: true
         }
     };
+
 
     bot.sendMessage(chatId, `🎮 **ወደ Yohans Bingo ጨዋታ እንኳን ደህና መጡ!**`, mainKeyboard);
 });
