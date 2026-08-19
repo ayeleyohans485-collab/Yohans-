@@ -8,73 +8,95 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #1c242d;
+            background-color: #151d2a;
             color: #ffffff;
-            text-align: center;
-            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
+            background-color: #1e293b;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 100%;
             max-width: 400px;
-            margin: auto;
-            background: #242f3d;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         h1 {
-            color: #0088cc;
-            font-size: 24px;
+            font-size: 22px;
+            color: #38bdf8;
+            margin-bottom: 8px;
         }
-        .btn {
-            background-color: #0088cc;
+        p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .buy-btn {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 14px 20px;
             font-size: 16px;
-            border-radius: 8px;
+            font-weight: bold;
+            border-radius: 10px;
             cursor: pointer;
-            margin-top: 15px;
             width: 100%;
+            transition: background 0.3s ease;
         }
-        .btn:hover {
-            background-color: #006699;
+        .buy-btn:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
+
     <div class="container">
         <h1>🎮 Yohans Bingo Mini App</h1>
         <p>እንኳን ወደ Yohans Bingo ጨዋታ በደህና መጡ!</p>
-        <button class="btn" onclick="buyCard()">የቢንጎ ካርድ ግዛ (2 ETB)</button>
+        
+        <button class="buy-btn" onclick="buyCard()">የቢንጎ ካርድ ግዛ (10 ETB)</button>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
-        function buyCard() {
-            const userId = tg.initDataUnsafe?.user?.id;
+        async function buyCard() {
+            const userId = tg?.initDataUnsafe?.user?.id;
+
             if (!userId) {
-                alert("ተጠቃሚው አልተገኘም! እባክዎን ቦቱን በቴሌግራም ይክፈቱ።");
+                alert("የቴሌግራም መለያዎን ማግኘት አልተቻለም! እባክዎን ቦቱን በ Telegram ክፈቱት።");
                 return;
             }
 
-            fetch('/api/buy-card', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: userId, price: 2.00 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("ካርድ በስኬት ገዝተዋል! ቀሪ ሂሳብዎ: " + data.newBalance + " ETB");
+            try {
+                const response = await fetch('/api/buy-card', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId, price: 10 })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`🎉 ካርድ በተሳካ ሁኔታ ገዝተዋል!\n💰 ቀሪ ሂሳብዎ: ${result.newBalance.toFixed(2)} ETB`);
                 } else {
-                    alert("ስህተት: " + data.message);
+                    alert("⚠️ ስህተት: " + result.message);
                 }
-            })
-            .catch(err => alert("የሰርቨር ስህተት ተከሰቷል!"));
+            } catch (error) {
+                alert("❌ ከሰርቨር ጋር መገናኘት አልተቻለም!");
+            }
         }
     </script>
+
 </body>
 </html>
