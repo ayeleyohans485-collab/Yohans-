@@ -71,12 +71,8 @@
         }
 
         async function buyCard() {
-            const userId = tg?.initDataUnsafe?.user?.id;
-
-            if (!userId) {
-                alert("የቴሌግራም መለያዎን ማግኘት አልተቻለም! እባክዎን ቦቱን በ Telegram ክፈቱት።");
-                return;
-            }
+            // Telegram ID ካልተገኘ ጊዜያዊ ID መጠቀም
+            let userId = tg?.initDataUnsafe?.user?.id || 123456789;
 
             try {
                 const response = await fetch('/api/buy-card', {
