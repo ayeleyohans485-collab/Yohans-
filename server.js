@@ -13,26 +13,32 @@ if (!BOT_TOKEN) {
     process.exit(1);
 }
 
+// 1. Middleware እና Static Files ማስተናገጃ
 app.use(express.json());
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 1. ቦቱን Webhook በመጠቀም ማስነሳት (polling: false ተደርጓል)
+// 2. ቦቱን Webhook በመጠቀም ማስነሳት
 const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
-// Webhook URL ማዘጋጀት
+// 3. Webhook URL ማዘጋጀት
 const webhookUrl = `${WEB_APP_URL}/bot${BOT_TOKEN}`;
-bot.setWebHook(webhookUrl);
+bot.setWebHook(webhookUrl).then(() => {
+    console.log(`Webhook successfully set to: ${webhookUrl}`);
+}).catch((err) => {
+    console.error('Webhook set error:', err);
+});
 
-// ቴሌግራም መልእክት ሲልክ የሚቀበልበት API Endpoint
+// ቴሌግራም መልእክት ሲልክ የሚቀበልበት Endpoint
 app.post(`/bot${BOT_TOKEN}`, (req, res) => {
     bot.processUpdate(req.body);
     res.sendStatus(200);
 });
 
-// 2. የተጠቃሚዎች ዳታቤዝ
+// 4. የተጠቃሚዎች ዳታቤዝ (In-Memory Storage)
 const usersData = {};
 
+// ቻናል የተቀላቀለ መሆኑን ማረጋገጫ Function
 async function isUserInChannel(userId) {
     try {
         const member = await bot.getChatMember(CHANNEL_USERNAME, userId);
@@ -43,7 +49,7 @@ async function isUserInChannel(userId) {
     }
 }
 
-// 3. /start Command Handling
+// 5. /start Command Handling
 bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -95,7 +101,7 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     bot.sendMessage(chatId, `🎮 **ወደ Yohans Bingo ጨዋታ እንኳን ደህና መጡ!**`, mainKeyboard);
 });
 
-// 4. Text Messages Handling
+// 6. የቦት ቁልፎች (Text Messages Handling)
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -117,7 +123,7 @@ bot.on('message', async (msg) => {
     }
 });
 
-// 5. Mini App Card Purchase API
+// 7. Mini App Card Purchase API
 app.post('/api/buy-card', (req, res) => {
     const { userId, price } = req.body;
 
@@ -137,7 +143,7 @@ app.post('/api/buy-card', (req, res) => {
     return res.json({ success: true, newBalance: usersData[userId].balance });
 });
 
-// 6. Routes
+// 8. የ Mini App HTML ገጽ ማቅረቢያ
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -146,6 +152,7 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// 9. ሰርቨሩን ማስነሳት
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Bingo Server running on port ${PORT}`);
 });
