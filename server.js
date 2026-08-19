@@ -112,14 +112,21 @@ bot.on('message', async (msg) => {
     }
 });
 
-// 7. Mini App Card Purchase API
+// 7. Mini App Card Purchase API (ተጠቃሚው ከሌለ በራስ-ሰር ይመዘግባል)
 app.post('/api/buy-card', (req, res) => {
     const { userId, price } = req.body;
-    if (!usersData[userId]) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'የተጠቃሚ ID አልተገኘም!' });
     }
+
+    // ተጠቃሚው በሜሞሪ ውስጥ ካልተገኘ በራስ-ሰር በ 10 ETB ይመዘግባል
+    if (!usersData[userId]) {
+        usersData[userId] = { balance: 10.00, referrals: 0, referredBy: null };
+    }
+
     if (usersData[userId].balance < price) {
-        return res.status(400).json({ success: false, message: 'Insufficient balance' });
+        return res.status(400).json({ success: false, message: 'በቂ የገንዘብ መጠን የለዎትም!' });
     }
 
     usersData[userId].balance -= price;
