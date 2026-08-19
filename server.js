@@ -13,27 +13,26 @@ if (!BOT_TOKEN) {
     process.exit(1);
 }
 
-// 1. Middleware እና Static Files ማስተናገጃ
 app.use(express.json());
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. ቦቱን ማስነሳት (409 Conflict ለመከላከል drop_pending_updates ተጨምሯል)
-const bot = new TelegramBot(BOT_TOKEN, { 
-    polling: {
-        params: {
-            drop_pending_updates: true
-        }
-    } 
+// 1. ቦቱን Webhook በመጠቀም ማስነሳት (polling: false ተደርጓል)
+const bot = new TelegramBot(BOT_TOKEN, { polling: false });
+
+// Webhook URL ማዘጋጀት
+const webhookUrl = `${WEB_APP_URL}/bot${BOT_TOKEN}`;
+bot.setWebHook(webhookUrl);
+
+// ቴሌግራም መልእክት ሲልክ የሚቀበልበት API Endpoint
+app.post(`/bot${BOT_TOKEN}`, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
 });
 
-// 3. የድሮ Webhook ማጽጃ
-bot.deleteWebHook().catch(() => {});
-
-// 4. የተጠቃሚዎች ዳታቤዝ (In-Memory Storage)
+// 2. የተጠቃሚዎች ዳታቤዝ
 const usersData = {};
 
-// ቻናል የተቀላቀለ መሆኑን ማረጋገጫ Function
 async function isUserInChannel(userId) {
     try {
         const member = await bot.getChatMember(CHANNEL_USERNAME, userId);
@@ -44,7 +43,7 @@ async function isUserInChannel(userId) {
     }
 }
 
-// 5. /start Command Handling
+// 3. /start Command Handling
 bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -96,7 +95,7 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     bot.sendMessage(chatId, `🎮 **ወደ Yohans Bingo ጨዋታ እንኳን ደህና መጡ!**`, mainKeyboard);
 });
 
-// 6. የቦት ቁልፎች (Text Messages Handling)
+// 4. Text Messages Handling
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -118,7 +117,7 @@ bot.on('message', async (msg) => {
     }
 });
 
-// 7. Mini App Card Purchase API (ተጠቃሚው ከሌለ በራስ-ሰር ይመዘግባል)
+// 5. Mini App Card Purchase API
 app.post('/api/buy-card', (req, res) => {
     const { userId, price } = req.body;
 
@@ -126,7 +125,6 @@ app.post('/api/buy-card', (req, res) => {
         return res.status(400).json({ success: false, message: 'የተጠቃሚ ID አልተገኘም!' });
     }
 
-    // ተጠቃሚው በሜሞሪ ውስጥ ካልተገኘ በራስ-ሰር በ 10 ETB ይመዘግባል
     if (!usersData[userId]) {
         usersData[userId] = { balance: 10.00, referrals: 0, referredBy: null };
     }
@@ -139,7 +137,7 @@ app.post('/api/buy-card', (req, res) => {
     return res.json({ success: true, newBalance: usersData[userId].balance });
 });
 
-// 8. የ Mini App HTML ገጽ ማቅረቢያ (Root Route)
+// 6. Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -148,7 +146,6 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// 9. ሰርቨሩን ማስነሳት
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Bingo Server running on port ${PORT}`);
 });
