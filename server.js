@@ -1,28 +1,27 @@
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_USERNAME = '@Yohans12121';
-const WEB_APP_URL = 'https://yohans-xm77.onrender.com';
+const WEB_APP_URL = 'https://yohans-vn77.onrender.com';
 
 if (!BOT_TOKEN) {
     console.error("Error: BOT_TOKEN is not set in environment variables!");
     process.exit(1);
 }
 
-// 1. Static ፋይሎችን ማስተናገጃ
+// 1. Middleware እና Static Files ማስተናገጃ
+app.use(express.json());
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 
 // 2. ቦቱን ማስነሳት
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-// 3. የድሮ Webhook ማጽጃ (409 conflict ለመከላከል)
+// 3. የድሮ Webhook ማጽጃ (409 Conflict ለመከላከል)
 bot.deleteWebHook().catch(() => {});
 
 // 4. የተጠቃሚዎች ዳታቤዝ (In-Memory Storage)
@@ -91,7 +90,7 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
     bot.sendMessage(chatId, `🎮 **ወደ Yohans Bingo ጨዋታ እንኳን ደህና መጡ!**`, mainKeyboard);
 });
 
-// 6. የቦት ሜኑ ቁልፎች (Text Messages)
+// 6. የቦት ቁልፎች (Text Messages Handling)
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -127,7 +126,7 @@ app.post('/api/buy-card', (req, res) => {
     return res.json({ success: true, newBalance: usersData[userId].balance });
 });
 
-// 8. የ Mini App HTML ገጽ ማቅረቢያ (Root እና ማንኛውንም Route ይይዛል)
+// 8. የ Mini App HTML ገጽ ማቅረቢያ (Root Route)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
