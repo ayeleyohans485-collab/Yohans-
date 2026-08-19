@@ -18,10 +18,16 @@ app.use(express.json());
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. ቦቱን ማስነሳት
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+// 2. ቦቱን ማስነሳት (409 Conflict ለመከላከል drop_pending_updates ተጨምሯል)
+const bot = new TelegramBot(BOT_TOKEN, { 
+    polling: {
+        params: {
+            drop_pending_updates: true
+        }
+    } 
+});
 
-// 3. የድሮ Webhook ማጽጃ (409 Conflict ለመከላከል)
+// 3. የድሮ Webhook ማጽጃ
 bot.deleteWebHook().catch(() => {});
 
 // 4. የተጠቃሚዎች ዳታቤዝ (In-Memory Storage)
