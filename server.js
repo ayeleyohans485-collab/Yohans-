@@ -1,149 +1,58 @@
 const express = require('express');
-const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
-
 const app = express();
-const PORT = process.env.PORT || 10000;
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHANNEL_USERNAME = '@Yohans12121';
-const WEB_APP_URL = 'https://yohans-vn77.onrender.com';
-
-if (!BOT_TOKEN) {
-    console.error("Error: BOT_TOKEN is not set in environment variables!");
-    process.exit(1);
-}
 
 app.use(express.json());
-
-// Cache Control - እንዳያስታውስ የሚከለክል
-app.use((req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    next();
-});
-
-app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const bot = new TelegramBot(BOT_TOKEN, { polling: false });
+// የተጠቃሚዎች ሂሳብ መያዣ
+let users = {};
 
-const webhookUrl = `${WEB_APP_URL}/bot${BOT_TOKEN}`;
-bot.setWebHook(webhookUrl).then(() => {
-    console.log(`Webhook set to: ${webhookUrl}`);
-}).catch((err) => console.error('Webhook set error:', err));
+// የሰርቨር ታይመር (በየ 30 ሰከንዱ የሚዞር)
+const ROUND_TIME = 30; 
+let startTime = Date.now();
 
-app.post(`/bot${BOT_TOKEN}`, (req, res) => {
-    bot.processUpdate(req.body);
-    res.sendStatus(200);
-});
-
-// Temp Database
-const usersData = {};
-
-async function isUserInChannel(userId) {
-    try {
-        const member = await bot.getChatMember(CHANNEL_USERNAME, userId);
-        return ['creator', 'administrator', 'member'].includes(member.status);
-    } catch (e) {
-        return false;
-    }
+// የቀረውን ሰዓት ከሰርቨር ማስያዣ
+function getRemainingTime() {
+    let elapsed = Math.floor((Date.now() - startTime) / 1000);
+    let remaining = ROUND_TIME - (elapsed % ROUND_TIME);
+    return remaining;
 }
 
-bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    const referrerId = match ? match[1] : null;
-
-    const isJoined = await isUserInChannel(userId);
-    if (!isJoined) {
-        return bot.sendMessage(
-            chatId,
-            `⚠️ **ቦቱን ለመጠቀም አስቀድመው ቻናላችንን መቀላቀል አለብዎት!**`,
-            {
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: "📢 Join Channel", url: `https://t.me/${CHANNEL_USERNAME.replace('@', '')}` }]
-                    ]
-                },
-                parse_mode: 'Markdown'
-            }
-        );
-    }
-
-    if (!usersData[userId]) {
-        usersData[userId] = { balance: 10.00, referrals: 0 };
-        if (referrerId && usersData[referrerId]) {
-            usersData[referrerId].balance += 10.00;
-            usersData[referrerId].referrals += 1;
-            bot.sendMessage(referrerId, `🎉 **አዲስ ሰው ገብቷል!** +10.00 ETB አግኝተዋል።`);
-        }
-    }
-
-    // Cache ለመስበር በ URL መጨረሻ ላይ time parameter ተጨምሯል
-    const mainKeyboard = {
-        reply_markup: {
-            keyboard: [
-                [{ text: "🎮 Open Yohans Bingo Mini App", web_app: { url: `${WEB_APP_URL}?v=${Date.now()}` } }],
-                [{ text: "💳 My Balance" }, { text: "📥 Deposit" }],
-                [{ text: "👥 Invite" }]
-            ],
-            resize_keyboard: true
-        }
-    };
-
-    bot.sendMessage(chatId, `🎮 **ወደ Yohans Bingo እንኳን ደህና መጡ!**`, mainKeyboard);
+// የሰዓት መረጃ መቀበያ API
+app.get('/api/game-status', (req, res) => {
+    res.json({ remainingTime: getRemainingTime() });
 });
 
-bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    const text = msg.text;
-
-    if (!text || text.startsWith('/start')) return;
-
-    if (!usersData[userId]) {
-        usersData[userId] = { balance: 10.00, referrals: 0 };
-    }
-
-    if (text === "💳 My Balance") {
-        bot.sendMessage(chatId, `💰 **የእርስዎ Wallet ሂሳብ:** ${usersData[userId].balance.toFixed(2)} ETB`);
-    } else if (text === "📥 Deposit") {
-        bot.sendMessage(chatId, `💳 **ገንዘብ ለማስገባት** አድሚኑን ያናግሩ።`);
-    } else if (text === "👥 Invite") {
-        const refLink = `https://t.me/yohansayele21bot?start=ref_${userId}`;
-        bot.sendMessage(chatId, `👥 **የመጋበዣ ሊንክዎ:**\n🔗 ${refLink}`);
-    }
-});
-
+// የተጠቃሚ መረጃ መቀበያ API
 app.get('/api/user-data/:userId', (req, res) => {
-    const userId = req.params.userId;
-    if (!usersData[userId]) {
-        usersData[userId] = { balance: 10.00, referrals: 0 };
+    const uid = req.params.userId;
+    if (!users[uid]) {
+        users[uid] = { balance: 100 }; // የመነሻ ቦነስ
     }
-    res.json({ balance: usersData[userId].balance });
+    res.json(users[uid]);
 });
 
+// ጨዋታ መጫወቻ API
 app.post('/api/play-card', (req, res) => {
     const { userId, stake, cardNumber } = req.body;
-
-    if (!usersData[userId]) {
-        usersData[userId] = { balance: 10.00, referrals: 0 };
+    
+    if (!users[userId]) {
+        users[userId] = { balance: 100 };
     }
 
-    if (usersData[userId].balance < stake) {
-        return res.status(400).json({ success: false, message: 'Insufficient wallet balance.' });
+    if (users[userId].balance < stake) {
+        return res.json({ success: false, message: "በቂ የሂሳብ መጠን የለዎትም!" });
     }
 
-    usersData[userId].balance -= stake;
-    return res.json({ 
-        success: true, 
-        newBalance: usersData[userId].balance,
-        cardNumber: cardNumber
+    // ሂሳብ መቀነስ
+    users[userId].balance -= stake;
+
+    res.json({
+        success: true,
+        newBalance: users[userId].balance
     });
 });
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-app.listen(PORT, '0.0.0.0', () => console.log(`Bingo Server running on port ${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
