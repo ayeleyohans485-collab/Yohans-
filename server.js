@@ -6,19 +6,40 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Environment Variable ላይ ያለውን Token መጠቀም
 const BOT_TOKEN = process.env.BOT_TOKEN;
-
-if (!BOT_TOKEN) {
-    console.error('ERROR: BOT_TOKEN is not defined in environment variables!');
-    process.exit(1);
-}
-
 const bot = new Telegraf(BOT_TOKEN);
 
-// /start
+let users = {};
+let currentDrawnNumbers = [];
+let gameInterval = null;
+
+// በየ 3 ሰከንዱ ቁጥር የሚያወጣ ሰርቨር
+function startNumberDrawer() {
+    if (gameInterval) clearInterval(gameInterval);
+    currentDrawnNumbers = [];
+    
+    gameInterval = setInterval(() => {
+        if (currentDrawnNumbers.length < 75) {
+            let num;
+            do {
+                num = Math.floor(Math.random() * 75) + 1;
+            } while (currentDrawnNumbers.includes(num));
+            
+            currentDrawnNumbers.push(num);
+        } else {
+            clearInterval(gameInterval);
+        }
+    }, 3000);
+}
+
+startNumberDrawer();
+
+// Telegram Bot Command
 bot.start((ctx) => {
-    ctx.reply('👋 እንኳን ወደ የቤተሰብ ቢንጎ በደህና መጡ! ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ።', {
+    const uid = ctx.from.id.toString();
+    if (!users[uid]) users[uid] = { balance: 10 };
+
+    ctx.reply('👋 እንኳን ወደ የቤተሰብ 5x5 ቢንጎ በደህና መጡ! 10 ETB የነጻ ቦነስ ተሰጥቶዎታል። ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ።', {
         reply_markup: {
             inline_keyboard: [
                 [{ text: '🎮 Open Yohans Bingo Mini App', web_app: { url: 'https://yohans-vn77.onrender.com' } }]
@@ -27,44 +48,32 @@ bot.start((ctx) => {
     });
 });
 
-// ቦቱን ማስነሳት
-bot.launch().then(() => {
-    console.log('✅ Telegram Bot successfully running...');
-}).catch(err => {
-    console.error('❌ Bot Launch Error:', err);
-});
+bot.launch();
 
 // APIs
-let users = {};
-const ROUND_TIME = 30; 
-let startTime = Date.now();
-
-function getRemainingTime() {
-    let elapsed = Math.floor((Date.now() - startTime) / 1000);
-    return ROUND_TIME - (elapsed % ROUND_TIME);
-}
-
-app.get('/api/game-status', (req, res) => {
-    res.json({ remainingTime: getRemainingTime() });
+app.get('/api/game-state', (req, res) => {
+    res.json({ drawnNumbers: currentDrawnNumbers });
 });
 
 app.get('/api/user-data/:userId', (req, res) => {
     const uid = req.params.userId;
-    if (!users[uid]) users[uid] = { balance: 100 };
+    if (!users[uid]) users[uid] = { balance: 10 };
     res.json(users[uid]);
 });
 
-app.post('/api/play-card', (req, res) => {
-    const { userId, stake } = req.body;
-    if (!users[userId]) users[userId] = { balance: 100 };
+app.post('/api/claim-bingo', (req, res) => {
+    const { userId, stake, cardCount } = req.body;
+    if (!users[userId]) users[userId] = { balance: 10 };
 
-    if (users[userId].balance < stake) {
-        return res.json({ success: false, message: "በቂ ሂሳብ የለዎትም!" });
-    }
+    // አሸናፊውን ብር ማሳደግ (Stake * 3)
+    const winAmount = stake * 3 * cardCount;
+    users[userId].balance += winAmount;
 
-    users[userId].balance -= stake;
-    res.json({ success: true, newBalance: users[userId].balance });
+    // አዲስ የቁጥር ማውጣት ዙር ማስጀመር
+    startNumberDrawer();
+
+    res.json({ success: true, newBalance: users[userId].balance, winAmount });
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
