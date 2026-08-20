@@ -3,204 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yohans Bingo</title>
+    <title>Beteseb Bingo - Yohans</title>
     <style>
-        body {
-            background-color: #121629;
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .header {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            justify-content: space-between;
-            background: #1b223d;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .current-number-box {
-            background: #ffb703;
-            color: #000;
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: bold;
-            margin: 15px auto;
-            box-shadow: 0 0 15px rgba(255, 183, 3, 0.5);
-        }
-        .status-banner {
-            background: #2b3556;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            margin-bottom: 15px;
-            font-size: 15px;
-        }
-        .bingo-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .bingo-cell {
-            background: #1e293b;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #94a3b8;
-        }
-        .bingo-cell.marked {
-            background: #f97316;
-            color: white;
-        }
-        .bingo-cell.header-cell {
-            background: #3b82f6;
-            color: white;
-            font-size: 18px;
-        }
-        .footer-buttons {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 400px;
-            margin-top: 15px;
-        }
-        button {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button.bingo-btn {
-            background: #10b981;
-            flex-grow: 1;
-            margin-left: 10px;
-        }
+        body { font-family: Arial, sans-serif; background-color: #0f172a; color: white; margin: 0; padding: 10px; text-align: center; }
+        .header { display: flex; justify-content: space-between; background: #1e293b; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+        .board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 400px; margin: 0 auto; }
+        .cell { padding: 10px 0; background-color: #1e293b; border: 1px solid #334155; font-size: 16px; font-weight: bold; border-radius: 4px; }
+        .called { background-color: #f97316 !important; color: white; border-color: #ea580c; }
+        .footer-btn { margin-top: 15px; width: 100%; max-width: 400px; padding: 12px; background-color: #22c55e; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        #winModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; flex-direction: column; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div>Yohans ID: <br><b>YOHANS-01</b></div>
-        <div>Players: <br><b id="playerCount">0</b></div>
-        <div>Bet: <br><b>10</b></div>
+        <div>Game ID: <span id="gameId">BBK855044</span></div>
+        <div>Players: <span id="playersCount">48</span></div>
+        <div>Called: <span id="calledCount">0</span></div>
     </div>
 
-    <div class="status-banner" id="banner">
-        ⏳ የዮሐንስ ቢንጎ ጨዋታ ለመጀመር በመጠባበቅ ላይ...
-    </div>
+    <h3>Yohans Beteseb Bingo</h3>
+    <div id="statusText" style="color: #38bdf8; margin-bottom: 10px;">ጨዋታው ሊጀመር 45 ሰከንድ ይቀረዋል...</div>
 
-    <div class="current-number-box" id="currentNumBox">
-        --
-    </div>
+    <!-- 75 ሰሌዳ -->
+    <div id="board" class="board"></div>
 
-    <!-- የቢንጎ ሰሌዳ (B-I-N-G-O Grid) -->
-    <div class="bingo-grid" id="bingoBoard">
-        <div class="bingo-cell header-cell">B</div>
-        <div class="bingo-cell header-cell">I</div>
-        <div class="bingo-cell header-cell">N</div>
-        <div class="bingo-cell header-cell">G</div>
-        <div class="bingo-cell header-cell">O</div>
-    </div>
+    <button class="footer-btn" style="background-color: #ef4444;" onclick="leaveGame()">Leave</button>
+    <button class="footer-btn" onclick="claimBingo()">BINGO!</button>
 
-    <div class="footer-buttons">
-        <button onclick="leaveGame()">Leave</button>
-        <button class="bingo-btn" onclick="claimBingo()">BINGO!</button>
+    <!-- አሸናፊ ሲወጣ የሚመጣ ፕۆፕአፕ -->
+    <div id="winModal">
+        <h1 style="color: #facc15;">🏆 BINGO! 🏆</h1>
+        <p id="winnerMsg" style="font-size: 20px;"></p>
+        <p>Auto-starting next game...</p>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const banner = document.getElementById('banner');
-        const currentNumBox = document.getElementById('currentNumBox');
-        const playerCountElem = document.getElementById('playerCount');
-        const bingoBoard = document.getElementById('bingoBoard');
+        const board = document.getElementById('board');
+        const cells = {};
 
-        let calledNumsList = [];
-
-        // 1 እስከ 75 ያሉትን ቁጥሮች በሰሌዳው ላይ መሙላት
-        function createBoard() {
-            for (let i = 1; i <= 75; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'bingo-cell';
-                cell.id = `cell-${i}`;
-                cell.innerText = i;
-                bingoBoard.appendChild(cell);
-            }
+        // ሰሌዳውን መገንባት
+        for(let i = 1; i <= 75; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.innerText = i;
+            board.appendChild(cell);
+            cells[i] = cell;
         }
-        createBoard();
-
-        socket.on('playerCount', (count) => {
-            playerCountElem.innerText = count;
-        });
 
         socket.on('gameState', (data) => {
+            document.getElementById('gameId').innerText = data.gameId;
+            document.getElementById('playersCount').innerText = data.playersCount;
+            document.getElementById('calledCount').innerText = data.calledNumbers.length;
+            
             if (data.gameState === 'WAITING') {
-                banner.innerText = `⏳ ጨዋታው ለመጀመር ${data.countdown} ሰከንድ ቀርቷል...`;
-                currentNumBox.innerText = "--";
-                resetBoardColors();
+                document.getElementById('statusText').innerText = `ቀጣይ ጨዋታ ሊጀመር ${data.countdown} ሰከንድ ይቀረዋል...`;
             } else if (data.gameState === 'PLAYING') {
-                banner.innerText = `🎮 የዮሐንስ ቢንጎ በሂደት ላይ ነው!`;
+                document.getElementById('statusText').innerText = `ጨዋታ በመካሄድ ላይ ነው! አሁን የወጣው: ${data.currentNumber || '-'}`;
             }
+
+            // የወጡ ቁጥሮችን ማሳየት
+            Object.values(cells).forEach(c => c.classList.remove('called'));
+            data.calledNumbers.forEach(num => {
+                if(cells[num]) cells[num].classList.add('called');
+            });
         });
 
         socket.on('numberCalled', (data) => {
-            currentNumBox.innerText = data.number;
-            calledNumsList = data.calledNumbers;
-            
-            document.querySelectorAll('.bingo-cell').forEach(cell => {
-                const val = parseInt(cell.innerText);
-                if (calledNumsList.includes(val)) {
-                    cell.classList.add('marked');
-                }
-            });
+            document.getElementById('calledCount').innerText = data.calledNumbers.length;
+            document.getElementById('statusText').innerText = `አሁን የወጣው ቁጥር: ${data.number}`;
+            if(cells[data.number]) {
+                cells[data.number].classList.add('called');
+            }
         });
 
         socket.on('gameOver', (data) => {
-            banner.innerHTML = `🏆 <b>BINGO! WON!</b> አሸናፊ: ${data.winner}`;
+            const modal = document.getElementById('winModal');
+            document.getElementById('winnerMsg').innerText = `${data.winner} አሸንፏል! (ካርቴላ: ${data.cartelaId})`;
+            modal.style.display = 'flex';
         });
 
-        function resetBoardColors() {
-            document.querySelectorAll('.bingo-cell').forEach(cell => {
-                if (!cell.classList.contains('header-cell')) {
-                    cell.classList.remove('marked');
-                }
-            });
-        }
+        socket.on('gameStarted', () => {
+            document.getElementById('winModal').style.display = 'none';
+            Object.values(cells).forEach(c => c.classList.remove('called'));
+        });
 
         function claimBingo() {
-            socket.emit('bingoClaim', {
-                username: "ዮሐንስ ተጫዋች",
-                cartelaId: 64,
-                winningNumbers: calledNumsList
-            });
+            socket.emit('bingoClaim', { username: 'ዮሐንስ', cartelaId: 64 });
         }
 
         function leaveGame() {
-            alert('ጨዋታውን ለቀው ወጥተዋል!');
+            window.location.reload();
         }
     </script>
 </body>
