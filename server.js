@@ -11,7 +11,7 @@ app.use(express.static('public'));
 
 // ─── 1. የቴሌግራም ቦት ማዋቀር ───
 // 'YOUR_TELEGRAM_BOT_TOKEN' በሚለው ቦታ የቦትህን ቶክን አስገባ
-const bot = new Telegraf('YOUR_TELEGRAM_BOT_TOKEN');
+const bot = new Telegraf(8897205610:AAF_4qBaDglOpUbS9H7P11GRk1fpt3GCQSc);
 
 bot.start((ctx) => {
     ctx.reply('👋 እንቋዕ ወደ ዮሐንስ ቢንጎ ሰላም መጡ! 10 ETB ቦነስ ተሰጥቶታል። ለመጫወት ከታች ያለውን ይጫኑ።', {
