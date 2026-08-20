@@ -20,16 +20,36 @@ let takenCards = {};
 let gameTimer = null;
 let drawTimer = null;
 
+// ትክክለኛውን የቢንጎ ሬንጅ (B:1-15, I:16-30, N:31-45, G:46-60, O:61-75) የሚያመነጭ
 function generateCardMatrix(cardId) {
     let seed = cardId * 997;
-    let numbers = [];
-    while (numbers.length < 24) {
-        seed = (seed * 9301 + 49297) % 233280;
-        let num = (seed % 75) + 1;
-        if (!numbers.includes(num)) numbers.push(num);
+    function getRand(min, max, count) {
+        let arr = [];
+        while (arr.length < count) {
+            seed = (seed * 9301 + 49297) % 233280;
+            let num = Math.floor((seed / 233280) * (max - min + 1)) + min;
+            if (!arr.includes(num)) arr.push(num);
+        }
+        return arr;
     }
-    numbers.splice(12, 0, "FREE");
-    return numbers;
+
+    let b = getRand(1, 15, 5);
+    let i = getRand(16, 30, 5);
+    let n = getRand(31, 45, 4);
+    n.splice(2, 0, "FREE"); // መካከለኛው ነፃ ቦታ
+    let g = getRand(46, 60, 5);
+    let o = getRand(61, 75, 5);
+
+    // 5x5 ማትሪክስ መልክ ለማስያዝ (Column በ Column)
+    let matrix = [];
+    for (let row = 0; row < 5; row++) {
+        matrix.push(b[row]);
+        matrix.push(i[row]);
+        matrix.push(n[row]);
+        matrix.push(g[row]);
+        matrix.push(o[row]);
+    }
+    return matrix;
 }
 
 function startRoomCycle() {
@@ -116,7 +136,7 @@ app.get('/api/user-data/:userId', (req, res) => {
 app.post('/api/select-card', (req, res) => {
     const { userId, cardId, stake } = req.body;
     if (gameState !== 'WAITING') {
-        return res.json({ success: false, message: "ጨዋታው ተጀምሯል! ቀጣዩን ዙር ይበቁ።" });
+        return res.json({ success: false, message: "ጨዋታው ተጀምሯል! ቀጣዩን ዙር ይጠብቁ።" });
     }
     if (cardId < 1 || cardId > 200) {
         return res.json({ success: false, message: "ካርቴላ ቁጥር ከ 1 እስከ 200 መሆን አለበት!" });
