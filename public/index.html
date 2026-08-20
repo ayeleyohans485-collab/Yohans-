@@ -1,98 +1,146 @@
 <!DOCTYPE html>
-<html lang="am">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yohans Bingo Mini App</title>
+    <title>Beteseb Bingo Style</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #151d2a;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            background-color: #1e293b;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-        }
-        h1 {
-            font-size: 22px;
-            color: #38bdf8;
-            margin-bottom: 8px;
-        }
-        p {
-            color: #94a3b8;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        .buy-btn {
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            color: white;
-            border: none;
-            padding: 14px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.3s ease;
-        }
-        .buy-btn:active {
-            transform: scale(0.98);
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #121026; color: #ffffff; padding: 15px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .title { font-size: 20px; font-weight: bold; color: #a855f7; }
+        
+        /* Home Screen */
+        .home-screen { text-align: center; margin-top: 30px; }
+        .stake-title { font-size: 18px; margin-bottom: 15px; }
+        .btn-stake { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 25px; font-size: 16px; font-weight: bold; color: white; background: linear-gradient(90deg, #6366f1, #a855f7); cursor: pointer; }
+        
+        /* Game Screen */
+        .game-screen { display: none; }
+        .top-bar { display: flex; justify-content: space-between; background: #1e1b4b; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; }
+        .timer { color: #facc15; font-weight: bold; }
+        
+        .toast { display: none; background: #ef4444; color: white; padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; max-height: 60vh; overflow-y: auto; background: #1e1b4b; padding: 8px; border-radius: 8px; }
+        .card-num { background: #312e81; text-align: center; padding: 8px 2px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .card-num.selected { background: #f97316; }
+
+        .nav-back { background: #4c1d95; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-bottom: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🎮 Yohans Bingo Mini App</h1>
-        <p>እንኳን ወደ Yohans Bingo ጨዋታ በደህና መጡ!</p>
+    <!-- Home View -->
+    <div id="homeView" class="home-screen">
+        <h2 style="margin-bottom: 20px;">Welcome to <span style="color: #a855f7;">Yohans Bingo</span></h2>
+        <div class="stake-title">Choose Your Stake</div>
+        <button class="btn-stake" onclick="startGame(10)">Play 10 ETB</button>
+        <button class="btn-stake" onclick="startGame(20)">Play 20 ETB</button>
+    </div>
+
+    <!-- Game View -->
+    <div id="gameView" class="game-screen">
+        <button class="nav-back" onclick="showHome()">← Back</button>
         
-        <button class="buy-btn" onclick="buyCard()">የቢንጎ ካርድ ግዛ (10 ETB)</button>
+        <div id="toast" class="toast">⚠️ Insufficient wallet balance.</div>
+
+        <div class="top-bar">
+            <div>Main Wallet: <span id="walletBal">0</span></div>
+            <div>Stake: <span id="currentStake">10</span></div>
+            <div class="timer"><span id="timerSec">30</span> s</div>
+        </div>
+
+        <div class="grid-container" id="grid"></div>
     </div>
 
     <script>
         const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
+        if(tg) { tg.ready(); tg.expand(); }
+
+        let userId = tg?.initDataUnsafe?.user?.id || 123456789;
+        let currentStake = 10;
+        let balance = 0;
+        let timerInterval;
+
+        // Fetch User Balance
+        async function fetchUserData() {
+            try {
+                let res = await fetch(`/api/user-data/${userId}`);
+                let data = await res.json();
+                balance = data.balance;
+                document.getElementById('walletBal').innerText = balance.toFixed(0);
+            } catch(e) {}
+        }
+        fetchUserData();
+
+        function startGame(stake) {
+            currentStake = stake;
+            document.getElementById('currentStake').innerText = stake;
+            document.getElementById('homeView').style.display = 'none';
+            document.getElementById('gameView').style.display = 'block';
+            
+            buildGrid();
+            startTimer();
         }
 
-        async function buyCard() {
-            // Telegram ID ካልተገኘ ጊዜያዊ ID መጠቀም
-            let userId = tg?.initDataUnsafe?.user?.id || 123456789;
+        function showHome() {
+            clearInterval(timerInterval);
+            document.getElementById('homeView').style.display = 'block';
+            document.getElementById('gameView').style.display = 'none';
+        }
 
-            try {
-                const response = await fetch('/api/buy-card', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: userId, price: 10 })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert(`🎉 ካርድ በተሳካ ሁኔታ ገዝተዋል!\n💰 ቀሪ ሂሳብዎ: ${result.newBalance.toFixed(2)} ETB`);
-                } else {
-                    alert("⚠️ ስህተት: " + result.message);
-                }
-            } catch (error) {
-                alert("❌ ከሰርቨር ጋር መገናኘት አልተቻለም!");
+        function buildGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            for(let i = 1; i <= 280; i++) {
+                let btn = document.createElement('div');
+                btn.className = 'card-num';
+                btn.innerText = i;
+                btn.onclick = () => selectCard(i, btn);
+                grid.appendChild(btn);
             }
         }
-    </script>
 
+        async function selectCard(num, element) {
+            let toast = document.getElementById('toast');
+            toast.style.display = 'none';
+
+            try {
+                let res = await fetch('/api/play-card', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId, stake: currentStake, cardNumber: num })
+                });
+
+                let data = await res.json();
+
+                if(!data.success) {
+                    toast.innerText = "⚠️ " + data.message;
+                    toast.style.display = 'block';
+                    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+                } else {
+                    element.classList.add('selected');
+                    balance = data.newBalance;
+                    document.getElementById('walletBal').innerText = balance.toFixed(0);
+                }
+            } catch(e) {
+                alert("Network error!");
+            }
+        }
+
+        function startTimer() {
+            let sec = 30;
+            document.getElementById('timerSec').innerText = sec;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                sec--;
+                document.getElementById('timerSec').innerText = sec;
+                if(sec <= 0) sec = 30;
+            }, 1000);
+        }
+    </script>
 </body>
 </html>
