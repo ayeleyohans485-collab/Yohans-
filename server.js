@@ -9,12 +9,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const bot = new Telegraf(BOT_TOKEN);
 
+// የተጫዋቾች መረጃ እና የሰርቨር ገቢ (House Revenue)
 let users = {};
+let houseProfit = 0; // የ 20% ኮሚሽን ሳጥን
+
+// Global Game State (ሁሉም 200+ ተጫዋቾች በአንድ ላይ የሚጫወቱበት)
 let currentDrawnNumbers = [];
 let gameInterval = null;
 
-// በየ 3 ሰከንዱ ቁጥር የሚያወጣ ሰርቨር
-function startNumberDrawer() {
+// በየ 3 ሰከንዱ ቁጥር የሚያወጣ ማዕከላዊ ሰርቨር
+function startGlobalGame() {
     if (gameInterval) clearInterval(gameInterval);
     currentDrawnNumbers = [];
     
@@ -27,19 +31,21 @@ function startNumberDrawer() {
             
             currentDrawnNumbers.push(num);
         } else {
-            clearInterval(gameInterval);
+            // 75 ቁጥሮች ወጥተው ካለቁ አዲስ ዙር በራሱ ይጀምራል
+            startGlobalGame();
         }
     }, 3000);
 }
 
-startNumberDrawer();
+// ጨዋታውን ማስነሳት
+startGlobalGame();
 
 // Telegram Bot Command
 bot.start((ctx) => {
     const uid = ctx.from.id.toString();
     if (!users[uid]) users[uid] = { balance: 10 };
 
-    ctx.reply('👋 እንኳን ወደ የቤተሰብ 5x5 ቢንጎ በደህና መጡ! 10 ETB የነጻ ቦነስ ተሰጥቶዎታል። ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ።', {
+    ctx.reply('👋 እንኳን ወደ የቤተሰብ 5x5 ቢንጎ በደህና መጡ! 10 ETB ቦነስ ተሰጥቶዎታል። ለመጫወት ከታች ያለውን ቁልፍ ይጫኑ።', {
         reply_markup: {
             inline_keyboard: [
                 [{ text: '🎮 Open Yohans Bingo Mini App', web_app: { url: 'https://yohans-vn77.onrender.com' } }]
@@ -61,18 +67,33 @@ app.get('/api/user-data/:userId', (req, res) => {
     res.json(users[uid]);
 });
 
+// አሸናፊ ሲኖር BINGO ሲል
 app.post('/api/claim-bingo', (req, res) => {
     const { userId, stake, cardCount } = req.body;
     if (!users[userId]) users[userId] = { balance: 10 };
 
-    // አሸናፊውን ብር ማሳደግ (Stake * 3)
-    const winAmount = stake * 3 * cardCount;
+    const totalStake = stake * cardCount;
+
+    if (users[userId].balance < totalStake) {
+        return res.json({ success: false, message: "በቂ ሂሳብ የለዎትም!" });
+    }
+
+    // 1. የ 20% ኮሚሽን ስሌት (House cut 20%)
+    const commission = totalStake * 0.20;
+    const winAmount = (totalStake * 3) - commission; // አሸናፊው 20% ተቀንሶበት ያገኛል
+
+    houseProfit += commission; // 20% ወደ ባለቤቱ ሒሳብ ገቢ ይሆናል
     users[userId].balance += winAmount;
 
-    // አዲስ የቁጥር ማውጣት ዙር ማስጀመር
-    startNumberDrawer();
+    // አዲሱን ዙር ለሁሉም ተጫዋቾች ማስነሳት
+    startGlobalGame();
 
-    res.json({ success: true, newBalance: users[userId].balance, winAmount });
+    res.json({ 
+        success: true, 
+        newBalance: users[userId].balance, 
+        winAmount: winAmount,
+        houseProfit: houseProfit 
+    });
 });
 
 const PORT = process.env.PORT || 10000;
