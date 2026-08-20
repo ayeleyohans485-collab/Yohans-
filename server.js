@@ -13,20 +13,34 @@ app.use(express.static('public'));
 // 'YOUR_TELEGRAM_BOT_TOKEN' በሚለው ቦታ የቦትህን ቶክን አስገባ
 const bot = new Telegraf("8897205610:AAF_4qBaDglOpUbS9H7P11GRk1fpt3GCQSc");
 
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const { Telegraf } = require('telegraf');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static('public'));
+
+// ─── 1. የቦቱ ክፍል እዚህ ጋር ይገባል (የላኩልህን ኮድ እዚህ ለጥፍ) ───
+const bot = new Telegraf('የአንተ_ቶክን_እዚህ_ይሁን');
+
 bot.start((ctx) => {
-    ctx.reply('👋 እንቋዕ ወደ ዮሐንስ ቢንጎ ሰላም መጡ! 10 ETB ቦነስ ተሰጥቶታል። ለመጫወት ከታች ያለውን ይጫኑ።', {
-        reply_markup: {
-            inline_keyboard: [
-                [
-                    { 
-                        text: '🎮 Open Yohans Bingo Mini App', 
-                        web_app: { url: 'https://yohans-vn77.onrender.com' } 
-                    }
-                ]
-            ]
-        }
-    });
+    // ... (የቀረው የቁልፎች ኮድ)
 });
+
+bot.hears('💳 My Balance', (ctx) => { ... });
+bot.hears('💰 Deposit', (ctx) => { ... });
+bot.hears('👥 Invite', (ctx) => { ... });
+bot.hears('🎮 Open Yohans Bingo Mini App', (ctx) => { ... });
+
+bot.launch();
+
+// ─── 2. የቢንጎ ጨዋታ ሰርቨር ሎጂክ ከዚህ በታች ይቀጥላል ───
+let gameState = 'WAITING';
+// ... (የቀረው የሰርቨር ኮድ)
 
 bot.launch().then(() => {
     console.log('Telegram Bot started successfully! 🤖');
