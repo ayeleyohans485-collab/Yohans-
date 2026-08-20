@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>እውነተኛ የቤተሰብ ቢንጎ</title>
+    <title>የቤተሰብ ቢንጎ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -35,10 +35,16 @@
         .card-container { background: #1e293b; padding: 8px; border-radius: 10px; margin-bottom: 10px; }
         .card-title { font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 6px; }
 
+        /* BINGO ፊደላት ማሳያ */
+        .bingo-header-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 4px; }
+        .bingo-letter { background: #0284c7; color: white; font-weight: 900; font-size: 15px; padding: 6px 0; border-radius: 6px; text-align: center; }
+
         .bingo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-        .cell { background: #334155; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; user-select: none; }
-        .cell.marked { background: #22c55e; color: white; }
-        .cell.free { background: #d97706; color: white; font-size: 10px; }
+        
+        /* ቁጥሮቹ ሳይመረጡ እንዲደበቁ (font-size: 0) ተደርጓል */
+        .cell { background: #334155; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 0px; color: transparent; font-weight: bold; border-radius: 6px; cursor: pointer; user-select: none; transition: 0.2s; }
+        .cell.marked { background: #22c55e; color: white; font-size: 15px; }
+        .cell.free { background: #d97706; color: white; font-size: 11px; }
 
         .btn-bingo { width: 100%; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 0 12px #ef4444; }
     </style>
@@ -52,7 +58,6 @@
 
     <div id="statusBanner" class="status-banner">ጨዋታው ለመጀመር 30 ሰከንድ ቀርቷል...</div>
 
-    <!-- የካርቴላ መምረጫ ክፍል -->
     <div class="picker-box" id="pickerBox">
         <div style="font-size: 12px; color: #94a3b8;">የካርቴላ ቁጥር ይምረጡ (1 - 200)</div>
         <div class="picker-controls">
@@ -81,6 +86,15 @@
 
     <div class="card-container" id="cardContainer" style="display:none;">
         <div class="card-title" id="cardTitle">📌 ካርቴላ #--</div>
+        
+        <div class="bingo-header-row">
+            <div class="bingo-letter">B</div>
+            <div class="bingo-letter">I</div>
+            <div class="bingo-letter">N</div>
+            <div class="bingo-letter">G</div>
+            <div class="bingo-letter">O</div>
+        </div>
+
         <div class="bingo-grid" id="bingoGrid"></div>
     </div>
 
@@ -183,7 +197,7 @@
                 const banner = document.getElementById('statusBanner');
                 if (data.gameState === 'WAITING') {
                     isGamePlaying = false;
-                    banner.innerText = `⏳ ጨዋታው ለመጀመር ${data.countdown} ሰከንድ ቀርቷል... (ካርቴላ ይምረጡ)`;
+                    banner.innerText = `⏳ ጨዋታው ለመጀመር ${data.countdown} ሰከንድ ቀርቷል...`;
                     banner.className = 'status-banner';
                     if (!myCardId) document.getElementById('pickerBox').style.display = 'block';
                 } else {
