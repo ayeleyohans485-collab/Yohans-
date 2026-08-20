@@ -14,6 +14,15 @@ if (!BOT_TOKEN) {
 }
 
 app.use(express.json());
+
+// Cache Control - እንዳያስታውስ የሚከለክል
+app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -71,10 +80,11 @@ bot.onText(/\/start(?:\s+ref_(\d+))?/, async (msg, match) => {
         }
     }
 
+    // Cache ለመስበር በ URL መጨረሻ ላይ time parameter ተጨምሯል
     const mainKeyboard = {
         reply_markup: {
             keyboard: [
-                [{ text: "🎮 Open Yohans Bingo Mini App", web_app: { url: WEB_APP_URL } }],
+                [{ text: "🎮 Open Yohans Bingo Mini App", web_app: { url: `${WEB_APP_URL}?v=${Date.now()}` } }],
                 [{ text: "💳 My Balance" }, { text: "📥 Deposit" }],
                 [{ text: "👥 Invite" }]
             ],
@@ -106,7 +116,6 @@ bot.on('message', async (msg) => {
     }
 });
 
-// API: የተጠቃሚውን ሂሳብ ማወቂያ
 app.get('/api/user-data/:userId', (req, res) => {
     const userId = req.params.userId;
     if (!usersData[userId]) {
@@ -115,7 +124,6 @@ app.get('/api/user-data/:userId', (req, res) => {
     res.json({ balance: usersData[userId].balance });
 });
 
-// API: ካርድ መግዣና መጫወቻ
 app.post('/api/play-card', (req, res) => {
     const { userId, stake, cardNumber } = req.body;
 
