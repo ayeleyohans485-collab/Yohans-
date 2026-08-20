@@ -1,57 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="am">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yohans Bingo V2</title>
+    <title>የቤተሰብ ቢንጎ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #121026; color: #ffffff; padding: 15px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; color: #ffffff; padding: 10px; }
         
-        .home-screen { text-align: center; margin-top: 40px; }
-        .stake-title { font-size: 18px; margin-bottom: 20px; color: #cbd5e1; }
-        .btn-stake { width: 100%; padding: 16px; margin: 10px 0; border: none; border-radius: 25px; font-size: 18px; font-weight: bold; color: white; background: linear-gradient(90deg, #6366f1, #a855f7); cursor: pointer; }
+        .home-screen { text-align: center; margin-top: 50px; }
+        .app-title { font-size: 26px; font-weight: bold; color: #f59e0b; margin-bottom: 8px; }
+        .sub-title { font-size: 15px; color: #94a3b8; margin-bottom: 30px; }
         
+        .btn-stake { width: 100%; padding: 16px; margin: 10px 0; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; color: white; background: linear-gradient(135deg, #d97706, #b45309); cursor: pointer; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3); }
+
         .game-screen { display: none; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #1e1b4b; padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 14px; font-weight: 500; }
-        .timer { color: #facc15; font-weight: bold; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; border: 1px solid #334155; }
+        .timer-box { color: #f59e0b; font-weight: bold; }
         
-        .toast { display: none; background: #ef4444; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 12px; text-align: center; font-weight: bold; }
-        .info-msg { background: #334155; color: #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; text-align: center; }
+        .status-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; text-align: center; font-size: 13px; color: #38bdf8; margin-bottom: 10px; font-weight: 500; }
+        .toast { display: none; background: #dc2626; color: white; padding: 8px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; text-align: center; font-weight: bold; }
 
-        .grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; max-height: 55vh; overflow-y: auto; background: #1e1b4b; padding: 10px; border-radius: 10px; }
-        .card-num { background: #312e81; text-align: center; padding: 12px 2px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; user-select: none; }
-        .card-num.selected { background: #f97316; color: white; }
+        /* 200 የካርቴላዎች መምረጫ ሰሌዳ (Grid) */
+        .grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; background: #1e293b; padding: 8px; border-radius: 10px; border: 1px solid #334155; max-height: 60vh; overflow-y: auto; }
+        .card-num { background: #334155; color: #f8fafc; text-align: center; padding: 8px 0; border-radius: 5px; font-size: 12px; font-weight: bold; cursor: pointer; user-select: none; }
+        .card-num.selected { background: #f59e0b; color: #000000; font-weight: 900; }
 
-        .nav-back { background: #4c1d95; color: white; border: none; padding: 8px 16px; border-radius: 6px; margin-bottom: 12px; cursor: pointer; font-weight: bold; }
+        .btn-back { background: #475569; color: white; border: none; padding: 6px 14px; border-radius: 6px; margin-bottom: 10px; cursor: pointer; font-weight: bold; font-size: 12px; }
         
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
-        .modal-content { background: #1e1b4b; padding: 25px; border-radius: 15px; text-align: center; width: 85%; max-width: 320px; border: 1px solid #a855f7; }
-        .modal-btn { background: #a855f7; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin-top: 15px; cursor: pointer; font-weight: bold; width: 100%; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: #1e293b; padding: 20px; border-radius: 16px; text-align: center; width: 85%; max-width: 320px; border: 2px solid #f59e0b; }
+        .modal-title { font-size: 17px; color: #f59e0b; margin-bottom: 10px; font-weight: bold; }
+        .modal-btn { background: #f59e0b; color: #000; border: none; padding: 10px; border-radius: 8px; margin-top: 15px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <!-- Home View -->
     <div id="homeView" class="home-screen">
-        <h2 style="margin-bottom: 10px;">Welcome to <span style="color: #a855f7;">Yohans Bingo</span></h2>
-        <div class="stake-title">Choose Your Stake</div>
-        <button class="btn-stake" onclick="startGame(10)">Play 10 ETB</button>
-        <button class="btn-stake" onclick="startGame(20)">Play 20 ETB</button>
+        <div class="app-title">የቤተሰብ ቢንጎ</div>
+        <div class="sub-title">የመደብ መጠን ይምረጡ</div>
+        <button class="btn-stake" onclick="startGame(10)">በ 10 ብር ለመጫወት</button>
+        <button class="btn-stake" onclick="startGame(20)">በ 20 ብር ለመጫወት</button>
     </div>
 
     <!-- Game View -->
     <div id="gameView" class="game-screen">
-        <button class="nav-back" onclick="showHome()">← Back</button>
+        <button class="btn-back" onclick="showHome()">← ተመለስ</button>
         
-        <div id="toast" class="toast">⚠️ Insufficient wallet balance.</div>
-        <div class="info-msg" id="infoMsg">እባክዎ 5 ቁጥሮችን ይምረጡ (የተመረጡ: 0/5)</div>
+        <div id="toast" class="toast">⚠️ በቂ የሂሳብ መጠን የለዎትም።</div>
+        <div class="status-box" id="infoMsg">እባክዎ 5 ቁጥሮችን ይምረጡ (የተመረጡ: 0/5)</div>
 
         <div class="top-bar">
-            <div>Main Wallet: <span id="walletBal">0</span> ETB</div>
-            <div>Stake: <span id="currentStake">10</span></div>
-            <div class="timer"><span id="timerSec">30</span> s</div>
+            <div>ዋና ሂሳብ: <span id="walletBal" style="color:#f59e0b; font-weight:bold;">0</span> ETB</div>
+            <div>መደብ: <span id="currentStake">10</span></div>
+            <div class="timer-box"><span id="timerSec">--</span> ሰከንድ</div>
         </div>
 
         <div class="grid-container" id="grid"></div>
@@ -60,8 +64,8 @@
     <!-- Result Modal -->
     <div id="resultModal" class="modal">
         <div class="modal-content">
-            <h3 id="modalTitle" style="margin-bottom: 10px;">የጨዋታ ውጤት</h3>
-            <p id="modalBody" style="font-size: 14px; line-height: 1.5;"></p>
+            <div class="modal-title" id="modalTitle">የጨዋታው ውጤት</div>
+            <p id="modalBody" style="font-size: 13px; line-height: 1.6; color: #cbd5e1;"></p>
             <button class="modal-btn" onclick="closeModal()">እሺ</button>
         </div>
     </div>
@@ -73,7 +77,6 @@
         let userId = tg?.initDataUnsafe?.user?.id || 123456789;
         let currentStake = 10;
         let balance = 0;
-        let timerInterval;
         let selectedNumbers = [];
 
         async function fetchUserData() {
@@ -86,6 +89,16 @@
         }
         fetchUserData();
 
+        // ሰዓቱን ከሰርቨር ማመሳሰል (Reload ሲደረግ እንዳይጠፋ)
+        async function syncServerTimer() {
+            try {
+                let res = await fetch('/api/game-status');
+                let data = await res.json();
+                document.getElementById('timerSec').innerText = data.remainingTime;
+            } catch(e) {}
+        }
+        setInterval(syncServerTimer, 1000);
+
         function startGame(stake) {
             currentStake = stake;
             selectedNumbers = [];
@@ -94,19 +107,18 @@
             document.getElementById('gameView').style.display = 'block';
             updateInfoMsg();
             buildGrid();
-            startTimer();
         }
 
         function showHome() {
-            clearInterval(timerInterval);
             document.getElementById('homeView').style.display = 'block';
             document.getElementById('gameView').style.display = 'none';
         }
 
+        // ከ 1 እስከ 200 የካርቴላ ቁጥሮች መፍጠሪያ
         function buildGrid() {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
-            for(let i = 1; i <= 75; i++) {
+            for(let i = 1; i <= 200; i++) {
                 let btn = document.createElement('div');
                 btn.className = 'card-num';
                 btn.innerText = i;
@@ -163,21 +175,22 @@
                     balance = data.newBalance;
                     document.getElementById('walletBal').innerText = balance.toFixed(0);
 
+                    // ከ 1 እስከ 200 ባለው ውስጥ 5 የዕድል ቁጥሮች ማውጣት
                     let winningNumbers = [];
                     while(winningNumbers.length < 5) {
-                        let r = Math.floor(Math.random() * 75) + 1;
+                        let r = Math.floor(Math.random() * 200) + 1;
                         if(!winningNumbers.includes(r)) winningNumbers.push(r);
                     }
 
                     let matches = selectedNumbers.filter(n => winningNumbers.includes(n));
 
-                    let resultText = `የእርስዎ ቁጥሮች: ${selectedNumbers.join(', ')}<br>`;
-                    resultText += `የወጡት ቁጥሮች: ${winningNumbers.join(', ')}<br><br>`;
+                    let resultText = `<b>የእርስዎ ቁጥሮች:</b> ${selectedNumbers.join(', ')}<br>`;
+                    resultText += `<b>የወጡት ቁጥሮች:</b> ${winningNumbers.join(', ')}<br><br>`;
 
                     if (matches.length >= 3) {
-                        resultText += `🎉 **እንኳን ደስ አለዎት!** ${matches.length} ቁጥር አግኝተዋል!`;
+                        resultText += `<span style="color:#22c55e;">🎉 **እንኳን ደስ አለዎት!** ${matches.length} ቁጥር አግኝተዋል!</span>`;
                     } else {
-                        resultText += `❌ **ለጥቂት ነው ያመለጣችሁ!** ${matches.length} ቁጥር ብቻ ነው የገጠመው።`;
+                        resultText += `<span style="color:#ef4444;">❌ **ለጥቂት ነው ያመለጣችሁ!** ${matches.length} ቁጥር ብቻ ነው የገጠመው።</span>`;
                     }
 
                     showModal("የጨዋታው ውጤት", resultText);
@@ -198,17 +211,6 @@
             selectedNumbers = [];
             buildGrid();
             updateInfoMsg();
-        }
-
-        function startTimer() {
-            let sec = 30;
-            document.getElementById('timerSec').innerText = sec;
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                sec--;
-                document.getElementById('timerSec').innerText = sec;
-                if(sec <= 0) sec = 30;
-            }, 1000);
         }
     </script>
 </body>
