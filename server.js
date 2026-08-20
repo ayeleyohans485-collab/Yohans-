@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const { Telegraf } = require('telegraf');
 
 const app = express();
 const server = http.createServer(app);
@@ -8,6 +9,32 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
+// ─── 1. የቴሌግራም ቦት ማዋቀር ───
+// 'YOUR_TELEGRAM_BOT_TOKEN' በሚለው ቦታ የቦትህን ቶክን አስገባ
+const bot = new Telegraf('YOUR_TELEGRAM_BOT_TOKEN');
+
+bot.start((ctx) => {
+    ctx.reply('👋 እንቋዕ ወደ ዮሐንስ ቢንጎ ሰላም መጡ! 10 ETB ቦነስ ተሰጥቶታል። ለመጫወት ከታች ያለውን ይጫኑ።', {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { 
+                        text: '🎮 Open Yohans Bingo Mini App', 
+                        web_app: { url: 'https://yohans-vn77.onrender.com' } 
+                    }
+                ]
+            ]
+        }
+    });
+});
+
+bot.launch().then(() => {
+    console.log('Telegram Bot started successfully! 🤖');
+}).catch((err) => {
+    console.error('Telegram bot failed to start:', err);
+});
+
+// ─── 2. የቢንጎ ጨዋታ ሰርቨር ሎጂክ (Socket.io) ───
 let gameState = 'WAITING'; // WAITING, PLAYING, WON
 let countdown = 45;
 let calledNumbers = [];
@@ -17,7 +44,6 @@ let lastWinner = null;
 let winningCartela = null;
 let playersCount = 0;
 
-// የጨዋታ ሰዓት ቆጣሪ እና የቁጥር ማስተላለፊያ
 setInterval(() => {
     if (gameState === 'WAITING') {
         countdown--;
@@ -71,7 +97,7 @@ io.on('connection', (socket) => {
 
     socket.on('bingoClaim', (data) => {
         gameState = 'WON';
-        lastWinner = data.username || "ተጫዋች";
+        lastWinner = data.username || "ዮሐንስ ተጫዋች";
         winningCartela = data.cartelaId || 64;
         
         io.emit('gameOver', {
@@ -95,5 +121,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
-    console.log(`Beteseb Bingo Server running on port ${PORT} 🚀`);
+    console.log(`Yohans Bingo Server running on port ${PORT} 🚀`);
 });
