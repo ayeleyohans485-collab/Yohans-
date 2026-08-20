@@ -1,7 +1,7 @@
 {
   "name": "yohans-bingo",
   "version": "1.0.0",
-  "description": "Yohans Bingo Telegram Mini App",
+  "description": "Yohans Bingo Multiplayer Game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
