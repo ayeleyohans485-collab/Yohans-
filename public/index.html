@@ -13,6 +13,7 @@
             text-align: center;
             padding: 6px;
             margin: 0;
+            padding-bottom: 75px; /* ለታችኛው ናቪጌሽን ባር የሚሆን ቦታ */
         }
         h2 { color: #38bdf8; margin: 4px 0; font-size: 18px; }
         .game-info {
@@ -84,7 +85,8 @@
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
-        /* B-I-N-G-O ዋና ቦርድ ዲዛይን */
+
+        /* B-I-N-G-O ዋና የሰንጠረዥ ዲዛይን (እንደጠየቁት የተስተካከለ) */
         .master-board {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -106,21 +108,21 @@
             color: white;
             font-weight: bold;
             font-size: 13px;
-            padding: 3px 0;
+            padding: 4px 0;
             border-radius: 4px;
         }
         .master-cell {
-            background: #0f172a;
-            color: #64748b;
-            font-size: 10px;
-            padding: 2px 0;
+            background: #334155;
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 0;
             border-radius: 3px;
-            border: 1px solid #1e293b;
+            border: 1px solid #475569;
         }
         .master-cell.called {
             background: #f59e0b;
             color: #000;
-            font-weight: bold;
         }
 
         .number-board {
@@ -200,6 +202,7 @@
             display: flex;
             gap: 8px;
             justify-content: center;
+            margin-bottom: 10px;
         }
         .btn {
             padding: 8px 16px;
@@ -211,6 +214,34 @@
         }
         .btn-leave { background: #ef4444; color: white; }
         .btn-bingo { background: #22c55e; color: white; }
+
+        /* የታችኛው የአሰሳ አርማ (Bottom Navigation Bar) ዲዛይን */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            border-top: 2px solid #334155;
+            z-index: 1000;
+        }
+        .nav-item {
+            font-size: 11px;
+            text-align: center;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        .nav-item.active {
+            color: #38bdf8;
+        }
+        .nav-icon {
+            font-size: 16px;
+            display: block;
+            margin-bottom: 2px;
+        }
     </style>
 </head>
 <body>
@@ -277,6 +308,15 @@
     <div class="btn-container">
         <button class="btn btn-leave" onclick="leaveGame()">Leave</button>
         <button class="btn btn-bingo" onclick="checkBingo()">BINGO!</button>
+    </div>
+
+    <!-- የታችኛው የአሰሳ አርማ (Bottom Navigation Bar) -->
+    <div class="nav-bar">
+        <div class="nav-item active"><span class="nav-icon">🎮</span>Game</div>
+        <div class="nav-item"><span class="nav-icon">📊</span>Scores</div>
+        <div class="nav-item"><span class="nav-icon">📜</span>History</div>
+        <div class="nav-item"><span class="nav-icon">💰</span>Wallet</div>
+        <div class="nav-item"><span class="nav-icon">👤</span>Profile</div>
     </div>
 
     <script>
