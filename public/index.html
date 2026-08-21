@@ -219,7 +219,7 @@
     
     <div class="game-info">
         <span>ID: <b id="game-id">BBK855044</b></span>
-        <span>Players: <b id="player-count">185</b></span>
+        <span>Players: <b id="player-count">--</b></span>
     </div>
 
     <div class="wallet-box" id="wallet-display">
@@ -227,7 +227,7 @@
     </div>
 
     <div class="admin-box" id="admin-profit">
-        💼 የድርሻዎ (20%): 740.00 ETB
+        💼 የድርሻዎ (20%): -- ETB
     </div>
 
     <!-- የ 45 ሰከንድ ቆጠራ ማሳያ -->
@@ -307,7 +307,12 @@
             } catch (e) {}
         }
 
-        let playerCount = 185;
+        // ተለዋዋጭ የተጫዋቾች ቁጥር ማመንጨት (ከ 90 እስከ 180 የሚደርሱ)
+        let playerCount = parseInt(localStorage.getItem('yohans_player_count'));
+        if (!playerCount) {
+            playerCount = Math.floor(Math.random() * (180 - 90 + 1)) + 90;
+            localStorage.setItem('yohans_player_count', playerCount);
+        }
         document.getElementById('player-count').innerText = playerCount;
         let pool = playerCount * 20;
         document.getElementById('admin-profit').innerText = `💼 የድርሻዎ (20%): ${(pool * 0.2).toFixed(2)} ETB`;
@@ -317,7 +322,6 @@
         const walletDisplay = document.getElementById('wallet-display');
         walletDisplay.innerText = `💰 የኪስ ቦርሳ ቀሪ: ${walletBalance.toFixed(2)} ETB`;
 
-        // ሁለቱን የካርቴላ መራጫ ምርጫዎች (Select options) መሙላት (1 - 200)
         const select1 = document.getElementById('card-select-1');
         const select2 = document.getElementById('card-select-2');
         for (let i = 1; i <= 200; i++) {
@@ -343,7 +347,6 @@
             localStorage.setItem('yohans_automark', autoMark);
         }
 
-        // B-I-N-G-O ዋና ቦርድ
         const bingoCols = {
             'B': Array.from({length: 15}, (_, i) => i + 1),
             'I': Array.from({length: 15}, (_, i) => i + 16),
@@ -380,7 +383,6 @@
         let calledNumbersList = JSON.parse(localStorage.getItem('yohans_called_numbers')) || [];
         renderMasterBoard(calledNumbersList);
 
-        // የካርቴላ ቁጥሮችን ከ Seed ማመንጨት
         function getCardNumbers(seed) {
             let numbers = [];
             let randomSeed = seed * 997; 
@@ -425,7 +427,6 @@
                             cell.classList.add('marked');
                         }
                         
-                        // ተጫዋቹ በራሱ ማርክ ማድረግ የሚችለው Auto-Mark ሲጠፋ ብቻ ነው
                         cell.onclick = function() {
                             let gameActive = localStorage.getItem('yohans_game_active') === 'true';
                             if (!gameActive) {
@@ -477,7 +478,7 @@
             renderUserCards();
         }
 
-        // የ 45 ሰከንድ ቆጠራ እና ጨዋታ ማስጀመር
+        // የ 45 ሰከንድ ቆጠራ እና ካርቴላ ሳይመረጥ ሲቀር ሰዓቱ ዳግም እንዲጀምር (Loop) የተደረገበት ክፍል
         let timeLeft = parseInt(localStorage.getItem('yohans_timer')) || 45;
         let gameActive = localStorage.getItem('yohans_game_active') === 'true';
 
@@ -488,17 +489,26 @@
             startCaller();
         } else {
             let timerInterval = setInterval(() => {
-                timeLeft--;
+                let hasCard = savedCard1 !== null && savedCard1 !== "" && savedCard1 !== undefined;
+
                 if (timeLeft > 0) {
+                    timeLeft--;
                     document.getElementById('timer-display').innerText = `⏳ ጨዋታው ሊጀምር ${timeLeft} ሰከንድ ይቀረዋል (ካርቴላዎች ይምረጡ)`;
                     localStorage.setItem('yohans_timer', timeLeft);
                 } else {
-                    clearInterval(timerInterval);
-                    localStorage.setItem('yohans_game_active', 'true');
-                    document.getElementById('timer-display').innerText = `🚀 ጨዋታው ጀምሯል!`;
-                    select1.disabled = true;
-                    select2.disabled = true;
-                    startCaller();
+                    if (hasCard) {
+                        clearInterval(timerInterval);
+                        localStorage.setItem('yohans_game_active', 'true');
+                        document.getElementById('timer-display').innerText = `🚀 ጨዋታው ጀምሯል!`;
+                        select1.disabled = true;
+                        select2.disabled = true;
+                        startCaller();
+                    } else {
+                        // ካርቴላ ካልተመረጠ ሰዓቱ ወደ 45 ተመልሶ አዲስ ዙር እንዲጀምር ይደረጋል (Loop)
+                        timeLeft = 45;
+                        document.getElementById('timer-display').innerText = `⚠️ ካርቴላ አልመረጡም! አዲስ ዙር በድጋሚ ተጀምሯል...`;
+                        localStorage.setItem('yohans_timer', timeLeft);
+                    }
                 }
             }, 1000);
         }
@@ -513,11 +523,8 @@
             let callerInterval = setInterval(() => {
                 if(allNums.length === 0) {
                     clearInterval(callerInterval);
-                    localStorage.setItem('yohans_game_active', 'false');
-                    localStorage.setItem('yohans_timer', 45);
-                    select1.disabled = false;
-                    select2.disabled = false;
-                    document.getElementById('called-display').innerText = `🏁 ጨዋታው አልቋል! አዲስ ዙር ይጀመራል።`;
+                    localStorage.clear();
+                    window.location.reload();
                     return;
                 }
                 let currentNum = allNums.pop();
@@ -531,7 +538,6 @@
                     targetCell.classList.add('called');
                 }
 
-                // Auto-Mark ክፍት ከሆነ በሁለቱም የተጫዋቹ ካርዶች ላይ የወጣው ቁጥር ሲኖር በራሱ ይለብጠዋል
                 if (autoMark) {
                     [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
                         let nums = getCardNumbers(item.cardNum);
