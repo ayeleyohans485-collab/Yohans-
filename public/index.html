@@ -11,15 +11,15 @@
             background-color: #0f172a;
             color: #ffffff;
             text-align: center;
-            padding: 15px;
+            padding: 10px;
             margin: 0;
         }
         h2 { color: #38bdf8; margin-bottom: 5px; }
         .game-info {
             background: #1e293b;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-around;
             font-size: 13px;
@@ -28,13 +28,13 @@
             background: #0f766e;
             padding: 8px;
             border-radius: 6px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-size: 14px;
             font-weight: bold;
         }
         .card-selector {
-            margin-bottom: 15px;
-            font-size: 16px;
+            margin-bottom: 10px;
+            font-size: 15px;
         }
         .card-selector select {
             padding: 6px 12px;
@@ -42,23 +42,23 @@
             color: white;
             border: 1px solid #475569;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
         }
         .number-board {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #facc15;
             background: #334155;
-            padding: 12px;
+            padding: 10px;
             border-radius: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         .bingo-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            max-width: 350px;
-            margin: 0 auto 20px auto;
+            gap: 5px;
+            max-width: 320px;
+            margin: 0 auto 15px auto;
         }
         .cell {
             background: #1e293b;
@@ -67,11 +67,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            transition: 0.2s;
         }
         .cell.marked {
             background: #0284c7;
@@ -88,8 +87,8 @@
             justify-content: center;
         }
         .btn {
-            padding: 12px 20px;
-            font-size: 16px;
+            padding: 10px 18px;
+            font-size: 15px;
             font-weight: bold;
             border: none;
             border-radius: 8px;
@@ -97,7 +96,6 @@
         }
         .btn-leave { background: #ef4444; color: white; }
         .btn-bingo { background: #22c55e; color: white; }
-        .btn:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -116,7 +114,7 @@
 
     <!-- እስከ 200 የሚደርሱ ካርቴላዎች መረጣ -->
     <div class="card-selector">
-        <label for="card-select"><b>ካርቴላ ይምረጡ:</b></label>
+        <label for="card-select"><b>ካርቴላ ይምረጡ (እስከ 200):</b></label>
         <select id="card-select" onchange="changeCard()">
             <!-- በጃቫስክሪፕት እስከ 200 ይሞላል -->
         </select>
@@ -151,11 +149,9 @@
         cardSelect.value = savedCard;
 
         let calledNumbersList = JSON.parse(localStorage.getItem('yohans_called_numbers')) || [];
-        let currentNumDisplay = localStorage.getItem('yohans_current_num') || '🎲 የሚወጣው ቁጥር ይጠበቃል...';
-        document.getElementById('called-display').innerText = currentNumDisplay;
-
-        // የ 20% ድርሻ ማስያዣ (በእያንዳንዱ ጨዋታ ወይም ካርቴላ ግዢ የሚሰላ)
-        let totalGamePool = 185 * 20; // በ 185 ተጫዋቾች ተባዝቶ የሚሰላ कुल ገቢ (ለምሳሌ በአንድ ካርቴላ 20 ብር ሲሰላ)
+        
+        // የ 20% ድርሻ ስሌት (በ 185 ተጫዋቾች እና በ 20 ብር ስቴክ ሲሰላ)
+        let totalGamePool = 185 * 20; 
         let adminShare = totalGamePool * 0.20;
         document.getElementById('admin-profit').innerText = `💼 የድርሻዎ (20%): ${adminShare.toFixed(2)} ETB`;
 
@@ -223,8 +219,7 @@
 
                 localStorage.setItem('yohans_remaining_nums', JSON.stringify(allNums));
                 localStorage.setItem('yohans_called_numbers', JSON.stringify(calledNumbersList));
-                localStorage.setItem('yohans_current_num', displayTxt);
-            }, 5000);
+            }, 4000);
         }
 
         function checkBingo() {
