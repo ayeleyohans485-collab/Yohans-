@@ -11,75 +11,132 @@
             background-color: #0f172a;
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
         }
         .container {
             max-width: 400px;
             margin: auto;
             background: #1e293b;
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        h2 { color: #38bdf8; }
+        h2 { color: #38bdf8; margin: 10px 0; font-size: 20px; }
         .info {
             display: flex;
             justify-content: space-between;
             background: #334155;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        /* የቢንጎ ካርድ ሰንጠረዥ ዲዛይን */
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
             margin: 15px 0;
-            font-size: 14px;
+        }
+        .cell {
+            background: #334155;
+            border: 1px solid #475569;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #f8fafc;
+            transition: 0.2s;
+        }
+        .cell.marked {
+            background: #22c55e;
+            color: white;
+            border-color: #16a34a;
+        }
+        .btn-container {
+            display: flex;
+            gap: 10px;
         }
         .btn-danger {
             background-color: #ef4444;
             color: white;
             border: none;
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
+            flex: 1;
+            padding: 10px;
+            font-size: 15px;
             border-radius: 8px;
             cursor: pointer;
-            margin-top: 10px;
         }
         .btn-success {
             background-color: #22c55e;
             color: white;
             border: none;
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
+            flex: 1;
+            padding: 10px;
+            font-size: 15px;
             border-radius: 8px;
             cursor: pointer;
-            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Yohans Beteseb Bingo</h2>
-        <p>እንኳን ደህና መጡ! ጨዋታው በቅርቡ ይጀምራል...</p>
         
         <div class="info">
-            <span id="game-id">Game ID: BBK855044</span>
+            <span id="game-id">ID: BBK855044</span>
             <span id="players-count">Players: 1</span>
         </div>
 
-        <button class="btn-danger" onclick="leaveGame()">Leave</button>
-        <button class="btn-success" onclick="claimBingo()">BINGO!</button>
+        <!-- የቢንጎ ካርድ ሳጥኖች (25 ቁጥሮች) -->
+        <div class="bingo-grid" id="bingoCard">
+            <!-- በ JavaScript በራሱ ይሞላል -->
+        </div>
+
+        <div class="btn-container">
+            <button class="btn-danger" onclick="leaveGame()">Leave</button>
+            <button class="btn-success" onclick="claimBingo()">BINGO!</button>
+        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // የቢንጎ ካርድ ቁጥሮችን በዘፈቀደ ማመንጨት (Random Bingo Card Generator)
+        function generateCard() {
+            const grid = document.getElementById('bingoCard');
+            grid.innerHTML = '';
+            
+            // ከ 1 እስከ 75 ካሉ ቁጥሮች 25ቱን መርጦ ማቀላቀል
+            let numbers = Array.from({ length: 75 }, (_, i) => i + 1)
+                             .sort(() => Math.random() - 0.5)
+                             .slice(0, 25);
+
+            numbers.forEach((num, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = index === 12 ? '⭐' : num; // መሀተኛውን ቦታ በ ኮከብ ወይም ነፃ ማድረግ ይቻላል
+                
+                // ሳጥኑን ሲጫኑ ማቅለም (Mark cell)
+                cell.onclick = () => {
+                    cell.classList.toggle('marked');
+                };
+                
+                grid.appendChild(cell);
+            });
+        }
+
+        generateCard();
+
         function leaveGame() {
             tg.close();
         }
 
         function claimBingo() {
-            alert("ቢንጎ ታውጇል! ተረጋግጦ ይሸለማሉ!");
+            tg.showAlert("🎉 ቢንጎ ታውጇል! ተረጋግጦ ይሸለማሉ!");
         }
     </script>
 </body>
