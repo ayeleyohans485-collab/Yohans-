@@ -1,67 +1,17 @@
 <!DOCTYPE html>
-<html lang="am">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yohans Bingo</title>
     <style>
-        body { background-color: #121212; color: #fff; font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 10px; }
-        .header { display: flex; justify-content: space-between; background: #1e1e1e; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; }
-        .called-box { font-size: 22px; font-weight: bold; background: #3f51b5; padding: 15px; border-radius: 50px; width: 75px; height: 75px; line-height: 75px; margin: 10px auto; }
-        .board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 380px; margin: 0 auto; }
-        .cell { background: #2c2c2c; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 15px; }
-        .cell.marked { background: #ff9800; color: #000; }
-        .btn-bingo { background: #ff5722; color: white; border: none; padding: 14px; width: 100%; max-width: 380px; font-size: 18px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a2e; color: white; padding: 20px; }
+        .game-card { border: 2px solid #4e4e6a; padding: 20px; border-radius: 10px; }
     </style>
 </head>
 <body>
-
-    <div class="header">
-        <div>ID: <span id="gameId">--</span></div>
-        <div>Players: <span id="playersCount">--</span></div>
-        <div>Derash: <span id="derash">--</span></div>
+    <h1>🎮 Yohans Bingo</h1>
+    <div class="game-card">
+        <p>ጨዋታውን ለመጀመር ዝግጁ ነዎት?</p>
+        <button onclick="alert('ጨዋታው በቅርቡ ይጀምራል!')">Play Now</button>
     </div>
-
-    <div>የተጠራው ቁጥር</div>
-    <div class="called-box" id="currentCalled">--</div>
-
-    <div class="board" id="board"></div>
-
-    <button class="btn-bingo" onclick="checkBingo()">BINGO!</button>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const boardDiv = document.getElementById('board');
-        const cells = {};
-
-        for (let i = 1; i <= 75; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.innerText = i;
-            boardDiv.appendChild(cell);
-            cells[i] = cell;
-        }
-
-        socket.on('update_game', (data) => {
-            document.getElementById('gameId').innerText = data.gameId;
-            document.getElementById('playersCount').innerText = data.playersCount;
-            document.getElementById('derash').innerText = data.derash;
-            document.getElementById('currentCalled').innerText = data.currentCalled || '--';
-
-            for (let i = 1; i <= 75; i++) {
-                cells[i].classList.remove('marked');
-            }
-            data.calledNumbers.forEach(num => {
-                if (cells[num]) {
-                    cells[num].classList.add('marked');
-                }
-            });
-        });
-
-        function checkBingo() {
-            alert('ቢንጎዎ ተረጋግጧል! 🏆');
-        }
-    </script>
 </body>
 </html>
