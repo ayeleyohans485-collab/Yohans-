@@ -2,9 +2,13 @@ const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const path = require('path');
 
-// 1. Bot Configuration (ቶከኑ በቀጥታ እዚህ ገብቷል)
-const token = 'YOUR_BOT_TOKEN_HERE'; 
-const CHANNEL_USERNAME = '@Yohans12121'; 
+// ቶከኑን ከ Render Environment Variables ላይ ብቻ ይወስዳል
+const token = process.env.BOT_TOKEN;
+
+if (!token) {
+    console.error("Critical Error: BOT_TOKEN is not set in Render Environment!");
+    process.exit(1);
+}
 
 const bot = new TelegramBot(token, { polling: true });
 const app = express();
@@ -18,13 +22,11 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Real Bingo Bot Server running on port ${PORT}`);
+    console.log(`Bingo Bot Server is running on port ${PORT}`);
 });
 
-// የጨዋታ መረጃዎችን መያዣ (Active Games State)
 const activeGames = {};
 
-// 2. Main Keyboard
 const mainKeyboard = {
     reply_markup: {
         keyboard: [
@@ -36,18 +38,13 @@ const mainKeyboard = {
     }
 };
 
-// 3. /start Command
 bot.onText(/\/start/, async (msg) => {
-    const chatId = msg.chat.id;
-    const welcomeText = `🎉 **እንኳን ደህና መጡ ወደ እውነተኛው የቢንጎ ጨዋታ ቦት!** 🎉\n\nከታች ባሉት አማራጮች ጨዋታውን መጀመር ወይም ሚኒ አፑን መክፈት ይችላሉ።`;
-
-    await bot.sendMessage(chatId, welcomeText, {
+    await bot.sendMessage(msg.chat.id, `🎉 **እንኳን ደህና መጡ ወደ Yohans Bingo!** 🎉`, {
         ...mainKeyboard,
         parse_mode: 'Markdown'
     });
 });
 
-// 4. Message Handlers for Game Actions
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
@@ -55,79 +52,41 @@ bot.on('message', async (msg) => {
     if (!text || text.startsWith('/start')) return;
 
     if (text === '🎲 አዲስ ቢንጎ ጀምር (Start Bingo)') {
-        // ከ 1 እስከ 75 ያሉ ቁጥሮችን ማዘጋጀት
-        let numbers = Array.from({ length: 75 }, (_, i) => i + 1);
-        // ቁጥሮቹን መቀላቀል (Shuffle)
-        numbers.sort(() => Math.random() - 0.5);
+        let numbers = Array.from({ length: 75 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+        activeGames[chatId] = { numbers, calledNumbers: [], isGameActive: true };
 
-        activeGames[chatId] = {
-            numbers: numbers,
-            calledNumbers: [],
-            isGameActive: true
-        };
-
-        await bot.sendMessage(chatId, `🎲 **የቢንጎ ጨዋታ ተጀመረ!**\n\nቁጥሮች መውጣት ጀምረዋል። ቀጣዩን ቁጥር ለማየት ከታች ያለውን ይጫኑ።`, {
+        await bot.sendMessage(chatId, `🎲 **ጨዋታው ተጀመረ!**`, {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: 'nextToken ➡️ ቁጥር አውጣ', callback_data: 'call_number' }],
+                    [{ text: '➡️ ቁጥር አውጣ', callback_data: 'call_number' }],
                     [{ text: '🛑 ጨዋታውን አቁም', callback_data: 'stop_game' }]
                 ]
             }
         });
     }
     else if (text === '💳 ሒሳቤ (Balance)') {
-        await bot.sendMessage(chatId, `💰 የባንክ ሒሳብዎ: **10.00 ETB**`, { ...mainKeyboard, parse_mode: 'Markdown' });
+        await bot.sendMessage(chatId, `💰 ሒሳብዎ: 10.00 ETB`, mainKeyboard);
     }
     else if (text === '👥 ጓደኛ ጋብዝ (Invite)') {
-        const inviteLink = `https://t.me/yohansayele21bot?start=ref_${chatId}`;
-        await bot.sendMessage(chatId, `👥 **የጋበዣ ሊንክዎ (Invite Link)**\n\n${inviteLink}\n\nይህን ለጓደኛ በመላክ ይሸለሙ!`, mainKeyboard);
+        await bot.sendMessage(chatId, `🔗 የጋበዣ ሊንክዎ: https://t.me/yohansayele21bot?start=ref_${chatId}`, mainKeyboard);
     }
 });
 
-// 5. Callback Query Handler (ለ ቁጥር ማውጫ ቁልፎች)
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
-    const messageId = query.message.message_id;
-    const data = query.data;
-
-    if (!activeGames[chatId] || !activeGames[chatId].isGameActive) {
-        await bot.answerCallbackQuery(query.id, { text: 'እባክዎ መጀመሪያ ጨዋታ ይጀምሩ!' });
-        return;
-    }
-
-    let game = activeGames[chatId];
-
-    if (data === 'call_number') {
-        if (game.numbers.length === 0) {
-            await bot.answerCallbackQuery(query.id, { text: 'ሁሉም ቁጥሮች አልቀዋል!' });
-            return;
-        }
-
-        let currentNum = game.numbers.pop();
-        game.calledNumbers.push(currentNum);
-
-        let responseText = `🎲 **የወጣው ቁጥር:** \n\n🔹 **${currentNum}**\n\n📋 **የወጡ ቁጥሮች ዝርዝር:** ${game.calledNumbers.join(', ')}`;
-
-        await bot.editMessageText(responseText, {
+    if (query.data === 'call_number' && activeGames[chatId]) {
+        let num = activeGames[chatId].numbers.pop();
+        activeGames[chatId].calledNumbers.push(num);
+        await bot.editMessageText(`🎲 የወጣው ቁጥር: ${num}\n📋 የወጡ: ${activeGames[chatId].calledNumbers.join(', ')}`, {
             chat_id: chatId,
-            message_id: messageId,
-            parse_mode: 'Markdown',
+            message_id: query.message.message_id,
             reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'nextToken ➡️ ሌላ ቁጥር አውጣ', callback_data: 'call_number' }],
-                    [{ text: '🛑 ጨዋታውን አቁም', callback_data: 'stop_game' }]
-                ]
+                inline_keyboard: [[{ text: '➡️ ሌላ ቁጥር', callback_data: 'call_number' }], [{ text: '🛑 አቁም', callback_data: 'stop_game' }]]
             }
         });
-
-        await bot.answerCallbackQuery(query.id);
-    } 
-    else if (data === 'stop_game') {
+    } else if (query.data === 'stop_game') {
         delete activeGames[chatId];
-        await bot.editMessageText(`🛑 **ጨዋታው ተቋርጧል!**`, {
-            chat_id: chatId,
-            message_id: messageId
-        });
-        await bot.answerCallbackQuery(query.id, { text: 'ጨዋታው ቆሟል' });
+        await bot.editMessageText(`🛑 ጨዋታው ቆሟል!`, { chat_id: chatId, message_id: query.message.message_id });
     }
+    bot.answerCallbackQuery(query.id);
 });
