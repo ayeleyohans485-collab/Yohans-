@@ -4,15 +4,22 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const mongoose = require('mongoose');
-const User = require('./models/user');
 
-// ዳታቤዝ ማገናኛ (በቀጥታ እዚህ ተካትቷል)
+// ዳታቤዝ ማገናኛ እና ዩዘር ሞዴል በቀጥታ እዚህ ተካትቷል
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
 .then(() => console.log('MongoDB Connected successfully!'))
 .catch((err) => console.error('MongoDB Connection Error:', err));
+
+const userSchema = new mongoose.Schema({
+    telegramId: { type: String, required: true, unique: true },
+    firstName: { type: String },
+    mainWallet: { type: Number, default: 0 }
+});
+
+const User = mongoose.model('User', userSchema);
 
 const app = express();
 const server = http.createServer(app);
