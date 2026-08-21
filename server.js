@@ -2,9 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const path = require('path');
 
-// ቶከኑን ከ Render Environment Variables ላይ ብቻ ይወስዳል
 const token = process.env.BOT_TOKEN;
-
 if (!token) {
     console.error("Critical Error: BOT_TOKEN is not set in Render Environment!");
     process.exit(1);
