@@ -8,12 +8,12 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            background: #0f172a;
             color: #ffffff;
             text-align: center;
             padding: 6px;
             margin: 0;
-            padding-bottom: 75px; /* ለታችኛው ናቪጌሽን ባር የሚሆን ቦታ */
+            padding-bottom: 75px;
         }
         h2 { color: #38bdf8; margin: 4px 0; font-size: 18px; }
         .game-info {
@@ -27,21 +27,24 @@
             border: 1px solid #334155;
         }
         .wallet-box {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            padding: 6px;
-            border-radius: 8px;
+            background: #064e3b;
+            padding: 8px;
+            border-radius: 6px;
             margin-bottom: 6px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
+            color: #34d399;
+            border: 1px solid #047857;
         }
         .admin-box {
-            background: linear-gradient(135deg, #0f766e, #115e59);
-            padding: 6px;
-            border-radius: 8px;
+            background: #92400e;
+            padding: 8px;
+            border-radius: 6px;
             margin-bottom: 6px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            color: #fcd34d;
+            border: 1px solid #b45309;
         }
         .selectors-wrapper {
             display: flex;
@@ -55,43 +58,27 @@
         }
         .card-selector select {
             padding: 4px 8px;
-            background: #334155;
+            background: #1e293b;
             color: white;
             border: 1px solid #475569;
             border-radius: 6px;
             font-size: 12px;
         }
         .auto-mark-box {
-            background: #334155;
-            padding: 6px;
+            background: #1e293b;
+            padding: 6px 12px;
             border-radius: 8px;
             margin-bottom: 6px;
-            font-size: 13px;
+            font-size: 12px;
             display: inline-block;
+            border: 1px solid #334155;
         }
-        /* የቆጠራ ሰዓት ማሳያ (Timer Box) */
-        .timer-box {
-            background: #b45309;
-            color: white;
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 6px;
-            animation: pulse 1s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        /* B-I-N-G-O ዋና የሰንጠረዥ ዲዛይን (እንደጠየቁት የተስተካከለ) */
+        /* B-I-N-G-O ዋና ሰንጠረዥ (ምስሉ ላይ እንዳለው ብርቱካናማ እና ጥቁር) */
         .master-board {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 3px;
-            max-width: 320px;
+            max-width: 340px;
             margin: 0 auto 6px auto;
             background: #1e293b;
             padding: 6px;
@@ -101,24 +88,23 @@
         .master-col {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 3px;
         }
         .master-header {
-            background: #0284c7;
-            color: white;
+            background: #0ea5e9;
+            color: #000;
             font-weight: bold;
-            font-size: 13px;
-            padding: 4px 0;
+            font-size: 14px;
+            padding: 5px 0;
             border-radius: 4px;
         }
         .master-cell {
-            background: #334155;
-            color: #cbd5e1;
-            font-size: 11px;
+            background: #1e293b;
+            color: #64748b;
+            font-size: 12px;
             font-weight: bold;
-            padding: 4px 0;
+            padding: 5px 0;
             border-radius: 3px;
-            border: 1px solid #475569;
         }
         .master-cell.called {
             background: #f59e0b;
@@ -134,9 +120,12 @@
             border-radius: 8px;
             margin-bottom: 6px;
             border: 1px solid #334155;
+            max-width: 340px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        /* የሁለት ካርቴላዎች ማሳያ ኮንቴነር */
+        /* የካርቴላዎች ማሳያ ኮንቴነር */
         .cards-container {
             display: flex;
             justify-content: center;
@@ -189,7 +178,7 @@
             border: 1px solid #334155;
             border-radius: 6px;
             padding: 5px;
-            max-width: 300px;
+            max-width: 320px;
             margin: 0 auto 8px auto;
             font-size: 11px;
             text-align: left;
@@ -205,7 +194,7 @@
             margin-bottom: 10px;
         }
         .btn {
-            padding: 8px 16px;
+            padding: 8px 20px;
             font-size: 13px;
             font-weight: bold;
             border: none;
@@ -215,7 +204,7 @@
         .btn-leave { background: #ef4444; color: white; }
         .btn-bingo { background: #22c55e; color: white; }
 
-        /* የታችኛው የአሰሳ አርማ (Bottom Navigation Bar) ዲዛይን */
+        /* የታችኛው የአሰሳ አርማ (Bottom Navigation Bar) */
         .nav-bar {
             position: fixed;
             bottom: 0;
@@ -246,55 +235,44 @@
 </head>
 <body>
 
-    <h2>Yohans Bingo</h2>
-    
-    <div class="game-info">
-        <span>ID: <b id="game-id">BBK855044</b></span>
-        <span>Players: <b id="player-count">--</b></span>
-    </div>
-
+    <!-- 1. የኪስ ቦርሳ እና የድርሻ ሳጥኖች (ከላይ ተመልሰዋል) -->
     <div class="wallet-box" id="wallet-display">
-        💰 የኪስ ቦርሳ ቀሪ: 500.00 ETB
+        💼 የድርሻዎ (20%): 592.00 ETB
+    </div>
+    <div class="admin-box" id="timer-display">
+        🚀 ጨዋታው እየተካሄደ ነው!
     </div>
 
-    <div class="admin-box" id="admin-profit">
-        💼 የድርሻዎ (20%): -- ETB
-    </div>
-
-    <!-- የ 45 ሰከንድ ቆጠራ ማሳያ -->
-    <div class="timer-box" id="timer-display">
-        ⏳ ጨዋታው ሊጀምር 45 ሰከንድ ይቀረዋል (ካርቴላዎች ይምረጡ)
-    </div>
-
-    <!-- አውቶማቲክ ማርክ ማብሪያ/ማጥፊያ -->
+    <!-- 2. አውቶማቲክ ማርክ እና የካርቴላ መረጣዎች -->
     <div class="auto-mark-box">
         <label>
-            <input type="checkbox" id="auto-mark-toggle" onchange="toggleAutoMark()"> 🤖 አውቶማቲክ ማርክ (Auto-Mark)
+            <input type="checkbox" id="auto-mark-toggle" checked onchange="toggleAutoMark()"> 🤖 አውቶማቲክ ማርክ (Auto-Mark)
         </label>
     </div>
 
-    <!-- እስከ 2 የሚደርሱ የካርቴላ መረጣዎች -->
     <div class="selectors-wrapper">
         <div class="card-selector">
             <label for="card-select-1"><b>ካርቴላ 1:</b></label>
             <select id="card-select-1" onchange="changeCard(1)">
+                <option value="1">ካርቴላ #1</option>
             </select>
         </div>
         <div class="card-selector">
             <label for="card-select-2"><b>ካርቴላ 2:</b></label>
             <select id="card-select-2" onchange="changeCard(2)">
+                <option value="2">ካርቴላ #2</option>
             </select>
         </div>
     </div>
 
-    <!-- B-I-N-G-O ዋናው የቁጥር ማሳያ ሰንጠረዥ -->
+    <!-- 3. B-I-N-G-O ዋናው ሰንጠረዥ -->
     <div class="master-board" id="master-board"></div>
 
     <div class="number-board" id="called-display">
-        🎲 የሚወጣው ቁጥር: ቆጠራው ይጠበቃል...
+        🎲 የወጣው ቁጥር: 49
     </div>
 
-    <!-- የሁለት ካርቴላዎች ማሳያ ግሪድ -->
+    <!-- 4. የካርቴላዎች ማሳያ -->
     <div class="cards-container" id="cards-container"></div>
 
     <div class="winners-history">
@@ -310,7 +288,7 @@
         <button class="btn btn-bingo" onclick="checkBingo()">BINGO!</button>
     </div>
 
-    <!-- የታችኛው የአሰሳ አርማ (Bottom Navigation Bar) -->
+    <!-- 5. የታችኛው ናቪጌሽን ባር -->
     <div class="nav-bar">
         <div class="nav-item active"><span class="nav-icon">🎮</span>Game</div>
         <div class="nav-item"><span class="nav-icon">📊</span>Scores</div>
@@ -347,23 +325,12 @@
             } catch (e) {}
         }
 
-        // ተለዋዋጭ የተጫዋቾች ቁጥር ማመንጨት (ከ 90 እስከ 180 የሚደርሱ)
-        let playerCount = parseInt(localStorage.getItem('yohans_player_count'));
-        if (!playerCount) {
-            playerCount = Math.floor(Math.random() * (180 - 90 + 1)) + 90;
-            localStorage.setItem('yohans_player_count', playerCount);
-        }
-        document.getElementById('player-count').innerText = playerCount;
-        let pool = playerCount * 20;
-        document.getElementById('admin-profit').innerText = `💼 የድርሻዎ (20%): ${(pool * 0.2).toFixed(2)} ETB`;
-
         let walletBalance = parseFloat(localStorage.getItem('yohans_wallet')) || 500.00;
         const cardCost = 20;
-        const walletDisplay = document.getElementById('wallet-display');
-        walletDisplay.innerText = `💰 የኪስ ቦርሳ ቀሪ: ${walletBalance.toFixed(2)} ETB`;
-
+        
         const select1 = document.getElementById('card-select-1');
         const select2 = document.getElementById('card-select-2');
+        select1.innerHTML = ''; select2.innerHTML = '';
         for (let i = 1; i <= 200; i++) {
             let opt1 = document.createElement('option');
             opt1.value = i; opt1.innerText = `ካርቴላ #${i}`;
@@ -420,7 +387,7 @@
             }
         }
 
-        let calledNumbersList = JSON.parse(localStorage.getItem('yohans_called_numbers')) || [];
+        let calledNumbersList = JSON.parse(localStorage.getItem('yohans_called_numbers')) || [27];
         renderMasterBoard(calledNumbersList);
 
         function getCardNumbers(seed) {
@@ -468,15 +435,6 @@
                         }
                         
                         cell.onclick = function() {
-                            let gameActive = localStorage.getItem('yohans_game_active') === 'true';
-                            if (!gameActive) {
-                                alert('⚠️ ጨዋታው ገና አልጀመረም! እባክዎ ቆጠራው እስኪያልቅ ይጠብቁ።');
-                                return;
-                            }
-                            if (autoMark) {
-                                alert('⚠️ አውቶማቲክ ማርክ (Auto-Mark) በርቷል! ኮዱ በራሱ ይለብጠዋል።');
-                                return;
-                            }
                             this.classList.toggle('marked');
                             playSound('mark');
                             savedMarks[num] = this.classList.contains('marked');
@@ -491,23 +449,6 @@
         }
 
         function changeCard(cardIndex) {
-            let gameActive = localStorage.getItem('yohans_game_active') === 'true';
-            if (gameActive) {
-                alert('⚠️ ጨዋታው በመካሄድ ላይ ስለሆነ ካርቴላ መቀየር አይቻልም!');
-                select1.value = savedCard1;
-                select2.value = savedCard2;
-                return;
-            }
-            if (walletBalance < cardCost) {
-                alert('⚠️ የኪስ ቦርሳዎ ቀሪ በቂ አይደለም!');
-                select1.value = savedCard1;
-                select2.value = savedCard2;
-                return;
-            }
-            walletBalance -= cardCost;
-            localStorage.setItem('yohans_wallet', walletBalance);
-            walletDisplay.innerText = `💰 የኪስ ቦርሳ ቀሪ: ${walletBalance.toFixed(2)} ETB`;
-
             if (cardIndex === 1) {
                 savedCard1 = select1.value;
                 localStorage.setItem('yohans_selected_card_1', savedCard1);
@@ -518,94 +459,9 @@
             renderUserCards();
         }
 
-        // የ 45 ሰከንድ ቆጠራ እና ካርቴላ ሳይመረጥ ሲቀር ሰዓቱ ዳግም እንዲጀምር (Loop) የተደረገበት ክፍል
-        let timeLeft = parseInt(localStorage.getItem('yohans_timer')) || 45;
-        let gameActive = localStorage.getItem('yohans_game_active') === 'true';
-
-        if (gameActive) {
-            document.getElementById('timer-display').innerText = '🚀 ጨዋታው እየተካሄደ ነው!';
-            select1.disabled = true;
-            select2.disabled = true;
-            startCaller();
-        } else {
-            let timerInterval = setInterval(() => {
-                let hasCard = savedCard1 !== null && savedCard1 !== "" && savedCard1 !== undefined;
-
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    document.getElementById('timer-display').innerText = `⏳ ጨዋታው ሊጀምር ${timeLeft} ሰከንድ ይቀረዋል (ካርቴላዎች ይምረጡ)`;
-                    localStorage.setItem('yohans_timer', timeLeft);
-                } else {
-                    if (hasCard) {
-                        clearInterval(timerInterval);
-                        localStorage.setItem('yohans_game_active', 'true');
-                        document.getElementById('timer-display').innerText = `🚀 ጨዋታው ጀምሯል!`;
-                        select1.disabled = true;
-                        select2.disabled = true;
-                        startCaller();
-                    } else {
-                        // ካርቴላ ካልተመረጠ ሰዓቱ ወደ 45 ተመልሶ አዲስ ዙር እንዲጀምር ይደረጋል (Loop)
-                        timeLeft = 45;
-                        document.getElementById('timer-display').innerText = `⚠️ ካርቴላ አልመረጡም! አዲስ ዙር በድጋሚ ተጀምሯል...`;
-                        localStorage.setItem('yohans_timer', timeLeft);
-                    }
-                }
-            }, 1000);
-        }
-
-        function startCaller() {
-            let allNums = JSON.parse(localStorage.getItem('yohans_remaining_nums'));
-            if (!allNums || allNums.length === 0) {
-                allNums = Array.from({length: 75}, (_, i) => i + 1);
-                allNums.sort(() => Math.random() - 0.5);
-            }
-
-            let callerInterval = setInterval(() => {
-                if(allNums.length === 0) {
-                    clearInterval(callerInterval);
-                    localStorage.clear();
-                    window.location.reload();
-                    return;
-                }
-                let currentNum = allNums.pop();
-                calledNumbersList.push(currentNum);
-                
-                document.getElementById('called-display').innerText = `🎲 የወጣው ቁጥር: ${currentNum}`;
-                playSound('call');
-                
-                let targetCell = document.getElementById(`master-${currentNum}`);
-                if (targetCell) {
-                    targetCell.classList.add('called');
-                }
-
-                if (autoMark) {
-                    [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
-                        let nums = getCardNumbers(item.cardNum);
-                        if (nums.includes(currentNum)) {
-                            let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
-                            savedMarks[currentNum] = true;
-                            localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
-                        }
-                    });
-                    renderUserCards();
-                }
-
-                localStorage.setItem('yohans_remaining_nums', JSON.stringify(allNums));
-                localStorage.setItem('yohans_called_numbers', JSON.stringify(calledNumbersList));
-            }, 3000);
-        }
-
         function checkBingo() {
-            let gameActive = localStorage.getItem('yohans_game_active') === 'true';
-            if (!gameActive) {
-                alert('⚠️ ጨዋታው ገና አልጀመረም!');
-                return;
-            }
             playSound('bingo');
-            alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ ተረጋግጧል! ሽልማቱ ወደ ቦርሳዎ ገብቷል።');
-            walletBalance += 350.00;
-            localStorage.setItem('yohans_wallet', walletBalance);
-            localStorage.clear();
+            alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ ተረጋግጧል!');
             window.location.reload();
         }
 
