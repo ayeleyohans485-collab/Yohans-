@@ -1,14 +1,13 @@
 {
   "name": "yohans-bingo",
   "version": "1.0.0",
-  "description": "Yohans Bingo Multiplayer Game",
+  "description": "Yohans Bingo Telegram Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.7.5",
-    "telegraf": "^4.16.3"
+    "node-telegram-bot-api": "^0.65.1"
   }
 }
