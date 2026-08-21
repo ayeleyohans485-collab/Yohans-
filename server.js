@@ -8,14 +8,21 @@ if (!token) {
     process.exit(1);
 }
 
-// 409 ግጭትን ሙሉ በሙሉ ለማስቀረት pollingን በ bot ዉቅር ውስጥ ሳናደርግ በራሳችን ሎጂክ እንጀምራለን
-const bot = new TelegramBot(token, { polling: false });
+// ፖሊንግን ሙሉ በሙሉ በመተው Webhook እንጠቀማለን (ለ Render ነፃ ሰርቨር ፍጹም ተስማሚ ነው)
+const bot = new TelegramBot(token);
+const URL = 'https://yohans-vn77.onrender.com'; // የ Render ሊንክዎ
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// የቴሌግራም ዌብሆክ ፖስት (Webhook Endpoint)
+app.post(`/bot${token}`, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -25,12 +32,11 @@ app.listen(PORT, async () => {
     console.log(`Real Bingo Bot Server is running on port ${PORT}`);
     
     try {
-        await bot.deleteWebHook();
-        console.log("Webhooks cleared.");
-        bot.startPolling();
-        console.log("Polling started successfully without conflict.");
+        // ዌብሆክን ከቴሌግራም ጋር ማያያዝ
+        await bot.setWebHook(`${URL}/bot${token}`);
+        console.log("Telegram Webhook set successfully. No more 409 conflicts!");
     } catch (err) {
-        console.error("Polling start error:", err.message);
+        console.error("Webhook setup error:", err.message);
     }
 });
 
