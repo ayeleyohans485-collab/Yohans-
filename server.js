@@ -6,7 +6,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const TelegramBot = require('node-telegram-bot-api');
 
-// 1. ዳታቤዝ ማገናኘት
+// 1. ዳታቤዝ ማገናኘት (RENDER ላይ MONGO_URI መኖሩን ያረጋግጡ)
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -14,7 +14,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('MongoDB Connected successfully!'))
 .catch((err) => console.error('MongoDB Connection Error:', err));
 
-// 2. የዩዘር ሞዴል
+// 2. የዩዘር ሞዴል (User Schema)
 const userSchema = new mongoose.Schema({
     telegramId: { type: String, required: true, unique: true },
     firstName: { type: String },
@@ -34,7 +34,7 @@ const BANK_INFO = "0938331486 (Yohans)";
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'miniapp')));
 
-// 3. የሚኒ አፕ (Mini App) API
+// 3. የሚኒ አፕ (Mini App) API Endpoints
 app.post('/api/play', async (req, res) => {
     try {
         const { telegramId, betAmount } = req.body;
@@ -65,7 +65,7 @@ app.post('/api/win', async (req, res) => {
     }
 });
 
-// 4. የቴሌግራም ቦት ማዋቀሪያ
+// 4. የቴሌግራም ቦት (Telegram Bot Logic)
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
@@ -134,7 +134,7 @@ bot.onText(/\/(deduct|withdraw) (\d+) (\d+)/, async (msg, match) => {
     }
 });
 
-// 5. የሪል-ታይም ቁጥር ጥሪ ሞተር (Socket.io)
+// 5. ሪል-ታይም ቁጥር ጥሪ ሞተር (Socket.io)
 io.on('connection', (socket) => {
     socket.on('start_game_room', () => {
         let calledNumbers = [];
