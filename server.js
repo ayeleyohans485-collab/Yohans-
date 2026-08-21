@@ -1,139 +1,76 @@
+const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const { Telegraf } = require('telegraf');
+const path = require('path');
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+// 1. Bot Configuration
+const token = process.env.BOT_TOKEN;
+const CHANNEL_USERNAME = '@Yohans12121'; 
 
-app.use(express.static('public'));
-
-// ─── 1. የቴሌግራም ቦት ማዋቀር ───
-// 'YOUR_TELEGRAM_BOT_TOKEN' በሚለው ቦታ የቦትህን ቶክን አስገባ
-const bot = new Telegraf("8897205610:AAF_4qBaDglOpUbS9H7P11GRk1fpt3GCQSc");
-
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const { Telegraf } = require('telegraf');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-app.use(express.static('public'));
-
-// ─── 1. የቦቱ ክፍል እዚህ ጋር ይገባል (የላኩልህን ኮድ እዚህ ለጥፍ) ───
-const bot = new Telegraf('የአንተ_ቶክን_እዚህ_ይሁን');
-
-bot.start((ctx) => {
-    // ... (የቀረው የቁልፎች ኮድ)
-});
-
-bot.hears('💳 My Balance', (ctx) => { ... });
-bot.hears('💰 Deposit', (ctx) => { ... });
-bot.hears('👥 Invite', (ctx) => { ... });
-bot.hears('🎮 Open Yohans Bingo Mini App', (ctx) => { ... });
-
-bot.launch();
-
-// ─── 2. የቢንጎ ጨዋታ ሰርቨር ሎጂክ ከዚህ በታች ይቀጥላል ───
-let gameState = 'WAITING';
-// ... (የቀረው የሰርቨር ኮድ)
-
-bot.launch().then(() => {
-    console.log('Telegram Bot started successfully! 🤖');
-}).catch((err) => {
-    console.error('Telegram bot failed to start:', err);
-});
-
-// ─── 2. የቢንጎ ጨዋታ ሰርቨር ሎጂክ (Socket.io) ───
-let gameState = 'WAITING'; // WAITING, PLAYING, WON
-let countdown = 45;
-let calledNumbers = [];
-let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
-let currentNumber = null;
-let lastWinner = null;
-let winningCartela = null;
-let playersCount = 0;
-
-setInterval(() => {
-    if (gameState === 'WAITING') {
-        countdown--;
-        if (countdown <= 0) {
-            startNewGame();
-        }
-        io.emit('gameState', getGameStateData());
-    } else if (gameState === 'PLAYING') {
-        if (availableNumbers.length > 0) {
-            const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-            currentNumber = availableNumbers.splice(randomIndex, 1)[0];
-            calledNumbers.push(currentNumber);
-            
-            io.emit('numberCalled', {
-                number: currentNumber,
-                calledNumbers: calledNumbers
-            });
-        } else {
-            startNewGame();
-        }
-    }
-}, 3000); // በየ 3 ሰከንድ አንድ ቁጥር ይወጣል
-
-function startNewGame() {
-    gameState = 'PLAYING';
-    calledNumbers = [];
-    availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
-    currentNumber = null;
-    lastWinner = null;
-    winningCartela = null;
-    io.emit('gameStarted', getGameStateData());
+if (!token) {
+    console.error("Error: BOT_TOKEN is missing in environment variables!");
+    process.exit(1);
 }
 
-function getGameStateData() {
-    return {
-        gameState,
-        countdown,
-        calledNumbers,
-        currentNumber,
-        lastWinner,
-        winningCartela,
-        playersCount
-    };
-}
-
-io.on('connection', (socket) => {
-    playersCount++;
-    io.emit('playerCount', playersCount);
-    
-    socket.emit('gameState', getGameStateData());
-
-    socket.on('bingoClaim', (data) => {
-        gameState = 'WON';
-        lastWinner = data.username || "ዮሐንስ ተጫዋች";
-        winningCartela = data.cartelaId || 64;
-        
-        io.emit('gameOver', {
-            winner: lastWinner,
-            cartelaId: winningCartela,
-            winningNumbers: data.winningNumbers
-        });
-
-        setTimeout(() => {
-            countdown = 45;
-            gameState = 'WAITING';
-            startNewGame();
-        }, 7000);
-    });
-
-    socket.on('disconnect', () => {
-        playersCount = Math.max(0, playersCount - 1);
-        io.emit('playerCount', playersCount);
-    });
-});
-
+const bot = new TelegramBot(token, { polling: true });
+const app = express();
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => {
-    console.log(`Yohans Bingo Server running on port ${PORT} 🚀`);
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Simple Web Server Route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start Express Server
+app.listen(PORT, () => {
+    console.log(`Yohans Bingo Server running on port ${PORT}`);
+});
+
+// 2. Main Keyboard Definition
+const mainKeyboard = {
+    reply_markup: {
+        keyboard: [
+            [{ text: '🎮 Open Yohans Bingo Mini App', web_app: { url: 'https://yohans-vn77.onrender.com' } }],
+            [{ text: '💳 My Balance (የእኔ ሒሳብ)' }, { text: '💰 Deposit (ገንዘብ ለማስገባት)' }],
+            [{ text: '👥 Invite (ጋብዝ)' }]
+        ],
+        resize_keyboard: true
+    }
+};
+
+// 3. /start Command Handler
+bot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userName = msg.from.first_name || 'ወዳጅ';
+
+    const welcomeMessage = `🎉 **እንኳን ደህና መጡ ወደ Yohans Bingo መድረክ!** 🎉\n\nእዚህጋር እየተጫወቱ ሽልማቶችን ማሸነፍ ይችላሉ!`;
+
+    await bot.sendMessage(chatId, welcomeMessage, {
+        ...mainKeyboard,
+        parse_mode: 'Markdown'
+    });
+});
+
+// 4. Text Messages Handler
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+
+    if (!text || text.startsWith('/start')) return;
+
+    if (text === '💳 My Balance (የእኔ ሒሳብ)') {
+        await bot.sendMessage(chatId, `💰 የድርጅት Wallet ሒሳብ: 10.00 ETB\n👥 የጋበዟቸው ሰዎች ብዛት: 0`, mainKeyboard);
+    } 
+    else if (text === '💰 Deposit (ገንዘብ ለማስገባት)') {
+        await bot.sendMessage(chatId, `📥 ገንዘብ ለማስገባት በውስጥ መስመር ያነጋግሩን።`, mainKeyboard);
+    } 
+    else if (text === '👥 Invite (ጋብዝ)') {
+        const inviteLink = `https://t.me/yohansayele21bot?start=ref_${chatId}`;
+        await bot.sendMessage(chatId, `👥 **የመልዕክተኛ ሊንክ (Invite Link)**\n\nይህን ሊንክ ለጓደኞችዎ ይላኩ! እርሰዎም ሆነ ጓደኛዎ 10.00 ETB ያገኛሉ::\n\n🔗 የጋበዣዎ ሊንክ: ${inviteLink}`, {
+            ...mainKeyboard,
+            parse_mode: 'Markdown'
+        });
+    }
 });
