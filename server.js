@@ -8,7 +8,24 @@ if (!token) {
     process.exit(1);
 }
 
-const bot = new TelegramBot(token, { polling: true });
+// 409 Conflict እንዳይፈጠር webhookን በማጥፋት ፖሊንግን ማስጀመር
+const bot = new TelegramBot(token, { polling: false });
+
+async function startBot() {
+    try {
+        await bot.deleteWebHook();
+        console.log("Old webhooks cleared successfully.");
+        
+        // ፖሊንግን እንደገና ማስጀመር
+        bot.startPolling();
+        console.log("Telegram Bot polling started successfully.");
+    } catch (error) {
+        console.error("Error starting bot polling:", error.message);
+    }
+}
+
+startBot();
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
