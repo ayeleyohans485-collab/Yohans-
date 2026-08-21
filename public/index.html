@@ -1,101 +1,136 @@
-require('dotenv').config();
-const TelegramBot = require('node-telegram-bot-api');
-const User = require('./models/user');
-
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
-const ADMIN_ID = process.env.ADMIN_ID;
-const MINI_APP_URL = process.env.MINI_APP_URL;
-const BANK_INFO = "0938331486 (Yohans)";
-
-// /start ትዕዛዝ ከ 10 ብር ዌልካም እና ሪፈራል ቦነስ ጋር
-bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const telegramId = msg.from.id.toString();
-    const firstName = msg.from.first_name || 'ተጫዋች';
-    const referrerId = match[1];
-
-    let user = await User.findOne({ telegramId });
-    
-    if (!user) {
-        user = await User.create({ 
-            telegramId, 
-            firstName, 
-            mainWallet: 10 
-        });
-
-        if (referrerId && referrerId !== telegramId) {
-            await User.findOneAndUpdate(
-                { telegramId: referrerId }, 
-                { $inc: { mainWallet: 10 } }
-            );
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yohans Beteseb Bingo</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            color: #ffffff;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
         }
-    }
-
-    bot.sendMessage(chatId, `👋 **Welcome to Yohans Bingo, ${firstName}!**\n\n🎁 አዲስ በመመዝገብዎ **10 ብር ዌልካም ቦነስ** አግኝተዋል!`, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: '🎮 Play Yohans Bingo', web_app: { url: MINI_APP_URL } }, { text: '💰 Balance', callback_data: 'balance' }],
-                [{ text: '💳 Deposit', callback_data: 'deposit' }, { text: '🔗 Invite', callback_data: 'invite' }]
-            ]
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-    });
-});
-
-// የቁልፍ ሰሌዳ ምላሾች (Callback Queries)
-bot.on('callback_query', async (q) => {
-    const chatId = q.message.chat.id;
-    const telegramId = q.from.id.toString();
-    const data = q.data;
-
-    let user = await User.findOne({ telegramId });
-
-    if (data === 'balance') {
-        const balance = user ? user.mainWallet : 0;
-        bot.sendMessage(chatId, `💰 የእርስዎ ቀሪ ሂሳብ: ${balance} ብር ነው`);
-    } 
-    else if (data === 'deposit') {
-        bot.sendMessage(chatId, `💳 **Yohans Bingo Deposit**\n\nእባክዎ ብሩን ወደዚህ የቴሌብር ቁጥር ይላኩ:\n👉 **${BANK_INFO}**\n\nከላኩ በኋላ የግብይት ማረጋገጫውን ለአድሚን ያጋሩ።`);
-    } 
-    else if (data === 'invite') {
-        bot.sendMessage(chatId, `🔗 **Invite Friends & Earn**\n\nጓደኛዎችዎን በመጋበዝ 10 ብር ቦነስ ያግኙ!\nየእርስዎ መጋበዣ ሊንክ:\nt.me/your_bot_name?start=${telegramId}`);
-    }
-
-    bot.answerCallbackQuery(q.id);
-});
-
-// አድሚን ብር ለመጨመር: /add [telegramId] [amount]
-bot.onText(/\/add (\d+) (\d+)/, async (msg, match) => {
-    if (msg.from.id.toString() === ADMIN_ID) {
-        const targetId = match[1];
-        const amount = Number(match[2]);
-        let user = await User.findOneAndUpdate(
-            { telegramId: targetId }, 
-            { $inc: { mainWallet: amount } },
-            { new: true }
-        );
-        bot.sendMessage(msg.chat.id, `✅ ተሳክቷል! ለተጠቃሚ ${targetId} መጠን ${amount} ብር ተጭኗል። አጠቃላይ ቀሪ ሂሳብ: ${user ? user.mainWallet : amount} ብር`);
-    } else {
-        bot.sendMessage(msg.chat.id, "❌ አድሚን ብቻ የሚጠቀመው ትዕዛዝ ነው!");
-    }
-});
-
-// አድሚን ብር ለመቀነስ/ለማውጣት: /deduct ወይም /withdraw [telegramId] [amount]
-bot.onText(/\/(deduct|withdraw) (\d+) (\d+)/, async (msg, match) => {
-    if (msg.from.id.toString() === ADMIN_ID) {
-        const targetId = match[2];
-        const amount = Number(match[3]);
-        let user = await User.findOne({ telegramId: targetId });
-        if (user) {
-            user.mainWallet = Math.max(0, user.mainWallet - amount);
-            await user.save();
-            bot.sendMessage(msg.chat.id, `✅ ተሳክቷል! ከተጠቃሚ ${targetId} ላይ ${amount} ብር ቀንሷል። ቀሪ ሂሳብ: ${user.mainWallet} ብር`);
-        } else {
-            bot.sendMessage(msg.chat.id, "❌ ተጠቃሚው አልተገኘም!");
+        h2 { color: #38bdf8; margin: 10px 0; font-size: 20px; }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            background: #334155;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
         }
-    } else {
-        bot.sendMessage(msg.chat.id, "❌ አድሚን ብቻ የሚጠቀመው ትዕዛዝ ነው!");
-    }
-});
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin: 15px 0;
+        }
+        .cell {
+            background: #334155;
+            border: 1px solid #475569;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #f8fafc;
+            transition: 0.2s;
+        }
+        .cell.marked {
+            background: #22c55e;
+            color: white;
+            border-color: #16a34a;
+        }
+        .btn-container {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            flex: 1;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-success {
+            background-color: #22c55e;
+            color: white;
+            border: none;
+            flex: 1;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Yohans Beteseb Bingo</h2>
+        
+        <div class="info">
+            <span id="game-id">ID: BBK855044</span>
+            <span id="players-count">Players: 1</span>
+        </div>
 
-console.log('Yohans Bingo Telegram Bot is running...');
+        <div class="bingo-grid" id="bingoCard"></div>
+
+        <div class="btn-container">
+            <button class="btn-danger" onclick="leaveGame()">Leave</button>
+            <button class="btn-success" onclick="claimBingo()">BINGO!</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        function generateCard() {
+            const grid = document.getElementById('bingoCard');
+            grid.innerHTML = '';
+            
+            let numbers = Array.from({ length: 75 }, (_, i) => i + 1)
+                             .sort(() => Math.random() - 0.5)
+                             .slice(0, 25);
+
+            numbers.forEach((num, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = index === 12 ? '⭐' : num;
+                
+                cell.onclick = () => {
+                    cell.classList.toggle('marked');
+                };
+                
+                grid.appendChild(cell);
+            });
+        }
+
+        generateCard();
+
+        function leaveGame() {
+            tg.close();
+        }
+
+        function claimBingo() {
+            tg.showAlert("🎉 ቢንጎ ታውጇል! ተረጋግጦ ይሸለማሉ!");
+        }
+    </script>
+</body>
+</html>
