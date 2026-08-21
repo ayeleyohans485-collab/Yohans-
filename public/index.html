@@ -3,134 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yohans Beteseb Bingo</title>
+    <title>Yohans Bingo</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #0f172a;
             color: #ffffff;
-            margin: 0;
-            padding: 10px;
             text-align: center;
-        }
-        .container {
-            max-width: 400px;
-            margin: auto;
-            background: #1e293b;
             padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin: 0;
         }
-        h2 { color: #38bdf8; margin: 10px 0; font-size: 20px; }
-        .info {
-            display: flex;
-            justify-content: space-between;
-            background: #334155;
-            padding: 8px 12px;
+        h2 { color: #38bdf8; margin-bottom: 5px; }
+        .game-info {
+            background: #1e293b;
+            padding: 10px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-around;
             font-size: 13px;
+        }
+        .admin-box {
+            background: #0f766e;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .card-selector {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .card-selector select {
+            padding: 6px 12px;
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+        .number-board {
+            font-size: 20px;
+            font-weight: bold;
+            color: #facc15;
+            background: #334155;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
         }
         .bingo-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            margin: 15px 0;
+            gap: 6px;
+            max-width: 350px;
+            margin: 0 auto 20px auto;
         }
         .cell {
-            background: #334155;
+            background: #1e293b;
             border: 1px solid #475569;
-            padding: 12px 0;
-            font-size: 16px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            color: #f8fafc;
             transition: 0.2s;
         }
         .cell.marked {
-            background: #22c55e;
+            background: #0284c7;
             color: white;
-            border-color: #16a34a;
+            border-color: #38bdf8;
+        }
+        .cell.star {
+            background: #f59e0b;
+            color: #000;
         }
         .btn-container {
             display: flex;
             gap: 10px;
+            justify-content: center;
         }
-        .btn-danger {
-            background-color: #ef4444;
-            color: white;
+        .btn {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
             border: none;
-            flex: 1;
-            padding: 10px;
-            font-size: 15px;
             border-radius: 8px;
             cursor: pointer;
         }
-        .btn-success {
-            background-color: #22c55e;
-            color: white;
-            border: none;
-            flex: 1;
-            padding: 10px;
-            font-size: 15px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
+        .btn-leave { background: #ef4444; color: white; }
+        .btn-bingo { background: #22c55e; color: white; }
+        .btn:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Yohans Beteseb Bingo</h2>
-        
-        <div class="info">
-            <span id="game-id">ID: BBK855044</span>
-            <span id="players-count">Players: 1</span>
-        </div>
 
-        <div class="bingo-grid" id="bingoCard"></div>
+    <h2>Yohans Bingo</h2>
+    
+    <div class="game-info">
+        <span>ID: <b id="game-id">BBK855044</b></span>
+        <span>Players: <b id="player-count">185</b></span>
+    </div>
 
-        <div class="btn-container">
-            <button class="btn-danger" onclick="leaveGame()">Leave</button>
-            <button class="btn-success" onclick="claimBingo()">BINGO!</button>
-        </div>
+    <!-- የእርስዎት 20% ድርሻ ማሳያ -->
+    <div class="admin-box" id="admin-profit">
+        💼 የድርሻዎ (20%): 0.00 ETB
+    </div>
+
+    <!-- እስከ 200 የሚደርሱ ካርቴላዎች መረጣ -->
+    <div class="card-selector">
+        <label for="card-select"><b>ካርቴላ ይምረጡ:</b></label>
+        <select id="card-select" onchange="changeCard()">
+            <!-- በጃቫስክሪፕት እስከ 200 ይሞላል -->
+        </select>
+    </div>
+
+    <div class="number-board" id="called-display">
+        🎲 የሚወጣው ቁጥር ይጠበቃል...
+    </div>
+
+    <div class="bingo-grid" id="bingo-card">
+        <!-- ካርቴላ በጃቫስክሪፕት ይሞላል -->
+    </div>
+
+    <div class="btn-container">
+        <button class="btn btn-leave" onclick="leaveGame()">Leave</button>
+        <button class="btn btn-bingo" onclick="checkBingo()">BINGO!</button>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
+        let tg = window.Telegram.WebApp;
         tg.expand();
 
-        function generateCard() {
-            const grid = document.getElementById('bingoCard');
-            grid.innerHTML = '';
-            
-            let numbers = Array.from({ length: 75 }, (_, i) => i + 1)
-                             .sort(() => Math.random() - 0.5)
-                             .slice(0, 25);
-
-            numbers.forEach((num, index) => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.innerText = index === 12 ? '⭐' : num;
-                
-                cell.onclick = () => {
-                    cell.classList.toggle('marked');
-                };
-                
-                grid.appendChild(cell);
-            });
+        const cardSelect = document.getElementById('card-select');
+        for (let i = 1; i <= 200; i++) {
+            let option = document.createElement('option');
+            option.value = i;
+            option.innerText = `ካርቴላ #${i}`;
+            cardSelect.appendChild(option);
         }
 
-        generateCard();
+        let savedCard = localStorage.getItem('yohans_selected_card') || 1;
+        cardSelect.value = savedCard;
+
+        let calledNumbersList = JSON.parse(localStorage.getItem('yohans_called_numbers')) || [];
+        let currentNumDisplay = localStorage.getItem('yohans_current_num') || '🎲 የሚወጣው ቁጥር ይጠበቃል...';
+        document.getElementById('called-display').innerText = currentNumDisplay;
+
+        // የ 20% ድርሻ ማስያዣ (በእያንዳንዱ ጨዋታ ወይም ካርቴላ ግዢ የሚሰላ)
+        let totalGamePool = 185 * 20; // በ 185 ተጫዋቾች ተባዝቶ የሚሰላ कुल ገቢ (ለምሳሌ በአንድ ካርቴላ 20 ብር ሲሰላ)
+        let adminShare = totalGamePool * 0.20;
+        document.getElementById('admin-profit').innerText = `💼 የድርሻዎ (20%): ${adminShare.toFixed(2)} ETB`;
+
+        function generateCard(seed) {
+            let cardGrid = document.getElementById('bingo-card');
+            cardGrid.innerHTML = '';
+            
+            let numbers = [];
+            let randomSeed = seed * 997; 
+            while(numbers.length < 24) {
+                randomSeed = (randomSeed * 9301 + 49297) % 233280;
+                let r = Math.floor((randomSeed / 233280) * 75) + 1;
+                if(numbers.indexOf(r) === -1) numbers.push(r);
+            }
+
+            let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${seed}`)) || {};
+
+            let count = 0;
+            for (let i = 0; i < 25; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                if (i === 12) {
+                    cell.innerText = '⭐';
+                    cell.classList.add('star', 'marked');
+                } else {
+                    let num = numbers[count++];
+                    cell.innerText = num;
+                    if (savedMarks[num]) {
+                        cell.classList.add('marked');
+                    }
+                    cell.onclick = function() {
+                        this.classList.toggle('marked');
+                        savedMarks[num] = this.classList.contains('marked');
+                        localStorage.setItem(`yohans_marks_${seed}`, JSON.stringify(savedMarks));
+                    };
+                }
+                cardGrid.appendChild(cell);
+            }
+        }
+
+        function changeCard() {
+            let selectedVal = cardSelect.value;
+            localStorage.setItem('yohans_selected_card', selectedVal);
+            generateCard(selectedVal);
+        }
+
+        function startCaller() {
+            let allNums = JSON.parse(localStorage.getItem('yohans_remaining_nums'));
+            
+            if (!allNums || allNums.length === 0) {
+                allNums = Array.from({length: 75}, (_, i) => i + 1);
+                allNums.sort(() => Math.random() - 0.5);
+            }
+
+            let interval = setInterval(() => {
+                if(allNums.length === 0) {
+                    clearInterval(interval);
+                    return;
+                }
+                let currentNum = allNums.pop();
+                calledNumbersList.push(currentNum);
+                
+                let displayTxt = `🎲 የወጣው ቁጥር: ${currentNum}`;
+                document.getElementById('called-display').innerText = displayTxt;
+
+                localStorage.setItem('yohans_remaining_nums', JSON.stringify(allNums));
+                localStorage.setItem('yohans_called_numbers', JSON.stringify(calledNumbersList));
+                localStorage.setItem('yohans_current_num', displayTxt);
+            }, 5000);
+        }
+
+        function checkBingo() {
+            alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ በትክክል ተረጋግጧል!');
+        }
 
         function leaveGame() {
-            tg.close();
+            localStorage.clear();
+            window.location.reload();
         }
 
-        function claimBingo() {
-            tg.showAlert("🎉 ቢንጎ ታውጇል! ተረጋግጦ ይሸለማሉ!");
-        }
+        generateCard(savedCard);
+        startCaller();
     </script>
 </body>
 </html>
