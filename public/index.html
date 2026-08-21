@@ -7,34 +7,36 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             color: #ffffff;
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             margin: 0;
         }
-        h2 { color: #38bdf8; margin-bottom: 5px; }
+        h2 { color: #38bdf8; margin: 5px 0; font-size: 20px; }
         .game-info {
-            background: #1e293b;
+            background: rgba(30, 41, 59, 0.9);
             padding: 8px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-around;
             font-size: 13px;
+            border: 1px solid #334155;
         }
         .admin-box {
-            background: #0f766e;
-            padding: 8px;
-            border-radius: 6px;
-            margin-bottom: 10px;
+            background: linear-gradient(135deg, #0f766e, #115e59);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
             font-size: 14px;
             font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
         .card-selector {
-            margin-bottom: 10px;
-            font-size: 15px;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
         .card-selector select {
             padding: 6px 12px;
@@ -45,20 +47,21 @@
             font-size: 14px;
         }
         .number-board {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: bold;
             color: #facc15;
-            background: #334155;
+            background: #1e293b;
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 10px;
+            border: 1px solid #334155;
         }
         .bingo-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 5px;
             max-width: 320px;
-            margin: 0 auto 15px auto;
+            margin: 0 auto 12px auto;
         }
         .cell {
             background: #1e293b;
@@ -71,6 +74,7 @@
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
+            transition: 0.2s;
         }
         .cell.marked {
             background: #0284c7;
@@ -87,11 +91,11 @@
             justify-content: center;
         }
         .btn {
-            padding: 10px 18px;
-            font-size: 15px;
+            padding: 10px 20px;
+            font-size: 14px;
             font-weight: bold;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
         }
         .btn-leave { background: #ef4444; color: white; }
@@ -102,32 +106,34 @@
 
     <h2>Yohans Bingo</h2>
     
+    <!-- የጨዋታ መለያ እና ተጫዋቾች ብዛት -->
     <div class="game-info">
         <span>ID: <b id="game-id">BBK855044</b></span>
         <span>Players: <b id="player-count">185</b></span>
     </div>
 
-    <!-- የእርስዎት 20% ድርሻ ማሳያ -->
+    <!-- የ 20% ድርሻ ስሌት ማሳያ -->
     <div class="admin-box" id="admin-profit">
-        💼 የድርሻዎ (20%): 0.00 ETB
+        💼 የድርሻዎ (20%): 740.00 ETB
     </div>
 
     <!-- እስከ 200 የሚደርሱ ካርቴላዎች መረጣ -->
     <div class="card-selector">
         <label for="card-select"><b>ካርቴላ ይምረጡ (እስከ 200):</b></label>
         <select id="card-select" onchange="changeCard()">
-            <!-- በጃቫስክሪፕት እስከ 200 ይሞላል -->
         </select>
     </div>
 
+    <!-- የሚወጣው ቁጥር ማሳያ -->
     <div class="number-board" id="called-display">
         🎲 የሚወጣው ቁጥር ይጠበቃል...
     </div>
 
+    <!-- 5x5 የቢንጎ ሰንጠረዥ -->
     <div class="bingo-grid" id="bingo-card">
-        <!-- ካርቴላ በጃቫስክሪፕት ይሞላል -->
     </div>
 
+    <!-- መቆጣጠሪያ ቁልፎች -->
     <div class="btn-container">
         <button class="btn btn-leave" onclick="leaveGame()">Leave</button>
         <button class="btn btn-bingo" onclick="checkBingo()">BINGO!</button>
@@ -137,6 +143,7 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
+        // እስከ 200 የሚደርሱ ካርቴላዎችን በድሮፕ ዳውን መሙላት
         const cardSelect = document.getElementById('card-select');
         for (let i = 1; i <= 200; i++) {
             let option = document.createElement('option');
@@ -155,6 +162,7 @@
         let adminShare = totalGamePool * 0.20;
         document.getElementById('admin-profit').innerText = `💼 የድርሻዎ (20%): ${adminShare.toFixed(2)} ETB`;
 
+        // ካርቴላውን የማመንጨት እና የማቀናበር ስራ
         function generateCard(seed) {
             let cardGrid = document.getElementById('bingo-card');
             cardGrid.innerHTML = '';
@@ -198,6 +206,7 @@
             generateCard(selectedVal);
         }
 
+        // በየሰከንዱ ቁጥሮችን በራሱ መርጦ የሚያወጣ ሲስተም
         function startCaller() {
             let allNums = JSON.parse(localStorage.getItem('yohans_remaining_nums'));
             
@@ -214,12 +223,11 @@
                 let currentNum = allNums.pop();
                 calledNumbersList.push(currentNum);
                 
-                let displayTxt = `🎲 የወጣው ቁጥር: ${currentNum}`;
-                document.getElementById('called-display').innerText = displayTxt;
+                document.getElementById('called-display').innerText = `🎲 የወጣው ቁጥር: ${currentNum}`;
 
                 localStorage.setItem('yohans_remaining_nums', JSON.stringify(allNums));
                 localStorage.setItem('yohans_called_numbers', JSON.stringify(calledNumbersList));
-            }, 4000);
+            }, 3000);
         }
 
         function checkBingo() {
