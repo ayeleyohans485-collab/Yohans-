@@ -8,24 +8,8 @@ if (!token) {
     process.exit(1);
 }
 
+// 409 ግጭትን ሙሉ በሙሉ ለማስቀረት pollingን በ bot ዉቅር ውስጥ ሳናደርግ በራሳችን ሎጂክ እንጀምራለን
 const bot = new TelegramBot(token, { polling: false });
-
-async function startBot() {
-    try {
-        await bot.deleteWebHook();
-        console.log("Old webhooks cleared successfully.");
-        
-        // ፖሊንግን ማስጀመር
-        bot.startPolling();
-        console.log("Telegram Bot polling started successfully.");
-    } catch (error) {
-        console.error("Polling error encountered, retrying in 5 seconds...", error.message);
-        setTimeout(startBot, 5000); // ስህተት ካጋጠመ በ 5 ሰኮንድ ውስጥ እንደገና ይሞክራል
-    }
-}
-
-// የ 409 ግጭት እንዳይፈጠር የ 3 ሰኮንድ መዘግየት ሰጥተን እንጀምራለን
-setTimeout(startBot, 3000);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -37,8 +21,17 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Real Bingo Bot Server is running on port ${PORT}`);
+    
+    try {
+        await bot.deleteWebHook();
+        console.log("Webhooks cleared.");
+        bot.startPolling();
+        console.log("Polling started successfully without conflict.");
+    } catch (err) {
+        console.error("Polling start error:", err.message);
+    }
 });
 
 const activeGames = {};
