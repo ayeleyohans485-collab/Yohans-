@@ -14,14 +14,18 @@ async function startBot() {
     try {
         await bot.deleteWebHook();
         console.log("Old webhooks cleared successfully.");
+        
+        // ፖሊንግን ማስጀመር
         bot.startPolling();
         console.log("Telegram Bot polling started successfully.");
     } catch (error) {
-        console.error("Error starting bot polling:", error.message);
+        console.error("Polling error encountered, retrying in 5 seconds...", error.message);
+        setTimeout(startBot, 5000); // ስህተት ካጋጠመ በ 5 ሰኮንድ ውስጥ እንደገና ይሞክራል
     }
 }
 
-startBot();
+// የ 409 ግጭት እንዳይፈጠር የ 3 ሰኮንድ መዘግየት ሰጥተን እንጀምራለን
+setTimeout(startBot, 3000);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -37,7 +41,6 @@ app.listen(PORT, () => {
     console.log(`Real Bingo Bot Server is running on port ${PORT}`);
 });
 
-// የንቁ ጨዋታዎች ማከማቻ
 const activeGames = {};
 
 const mainKeyboard = {
@@ -65,7 +68,6 @@ bot.on('message', async (msg) => {
     if (!text || text.startsWith('/start')) return;
 
     if (text === '🎲 አዲስ ቢንጎ ጀምር (Start Bingo)') {
-        // ከ 1 እስከ 75 ያሉ ቁጥሮችን ማዘጋጀት እና መቀላቀል
         let numbers = Array.from({ length: 75 }, (_, i) => i + 1);
         numbers.sort(() => Math.random() - 0.5);
 
@@ -78,7 +80,7 @@ bot.on('message', async (msg) => {
 
         let game = activeGames[chatId];
 
-        await bot.sendMessage(chatId, `🎲 **የቤተሰብ ቢንጎ ጨዋታ ተጀመረ!**\n\nቁጥሮች በራሳቸው በየ 6 ሰኮንዱ መውጣት ጀመረዋል!`, {
+        await bot.sendMessage(chatId, `🎲 **የቤተሰብ ቢንጎ ጨዋታ ተጀመረ!**\n\nቁጥሮች በራሳቸው በየ 6 ሰኮንዱ መውጣት ጀምረዋል!`, {
             reply_markup: {
                 inline_keyboard: [
                     [{ text: '🛑 ጨዋታውን አቁም', callback_data: 'stop_game' }]
@@ -86,7 +88,6 @@ bot.on('message', async (msg) => {
             }
         });
 
-        // አውቶማቲክ ቁጥር ማውጫ ሎፕ (Auto-draw every 6 seconds)
         game.timer = setInterval(async () => {
             if (!activeGames[chatId] || !activeGames[chatId].isGameActive) {
                 clearInterval(game.timer);
