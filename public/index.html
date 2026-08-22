@@ -220,7 +220,7 @@
     </div>
 
     <div class="timer-box" id="timer-display">
-        ⏳ ተጫዋቾች በመጠባበቅ ላይ... (45 ሰ)
+        ⏳ ጨዋታው ሊጀመር ነው... (45 ሰ)
     </div>
 
     <div class="auto-mark-box">
@@ -243,7 +243,7 @@
     <div class="master-board" id="master-board"></div>
 
     <div class="number-board" id="called-display">
-        🎲 የሚወጣው ቁጥር: ጨዋታው ገና አልጀመረም
+        🎲 የሚወጣው ቁጥር: ጨዋታው እስኪጀምር በመጠባበቅ ላይ...
     </div>
 
     <div class="cards-container" id="cards-container"></div>
@@ -273,12 +273,10 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 밸런ስ እና የቦነስ ሎጂክ (Balance & Bonus System)
         let userBalance = parseFloat(localStorage.getItem('yohans_balance'));
         if (isNaN(userBalance)) {
-            userBalance = 10.00; // ለመጀመሪያ ጊዜ ሲቀላቀል የ 10 ብር ቦነስ
+            userBalance = 10.00;
             localStorage.setItem('yohans_balance', userBalance);
-            alert('🎉 እንኳን ደህና መጡ! ቦቱን በመቀላቀልዎ 10 ETB ቦነስ ተበርክቶልዎታል!');
         }
 
         function updateWalletDisplay() {
@@ -339,7 +337,7 @@
         }
 
         let savedCard1 = localStorage.getItem('yohans_selected_card_1') || "";
-        let savedCard2 = localStorage.getItem('yohans_selected_card_2') || "";
+        let savedCard2 = localStorage.getItem('yohans_selected_card_2'] || "";
         select1.value = savedCard1;
         select2.value = savedCard2;
 
@@ -385,15 +383,41 @@
 
         renderMasterBoard([]);
 
+        // ትክክለኛ የቢንጎ ዓምድ (Column-based) ቁጥሮችን የሚያመነጭ ስልተ-ቀመር
         function getCardNumbers(seed) {
-            let numbers = [];
-            let randomSeed = seed * 997; 
-            while(numbers.length < 24) {
-                randomSeed = (randomSeed * 9301 + 49297) % 233280;
-                let r = Math.floor((randomSeed / 233280) * 75) + 1;
-                if(numbers.indexOf(r) === -1) numbers.push(r);
+            let cols = [
+                Array.from({length: 15}, (_, i) => i + 1),
+                Array.from({length: 15}, (_, i) => i + 16),
+                Array.from({length: 15}, (_, i) => i + 31),
+                Array.from({length: 15}, (_, i) => i + 46),
+                Array.from({length: 15}, (_, i) => i + 61)
+            ];
+            
+            let cardCols = [];
+            let randomSeed = parseInt(seed) * 997;
+
+            for (let c = 0; c < 5; c++) {
+                let shuffled = [...cols[c]];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    randomSeed = (randomSeed * 9301 + 49297) % 233280;
+                    let j = Math.floor((randomSeed / 233280) * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                cardCols.push(shuffled.slice(0, 5));
             }
-            return numbers;
+
+            // በ 5x5 ግሪድ መልክ በረድፍ (Row) እንዲቀመጡ ማድረግ (ማዕከላዊውን ካሬ መተው)
+            let cardGrid = [];
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    if (r === 2 && c === 2) {
+                        cardGrid.push('⭐');
+                    } else {
+                        cardGrid.push(cardCols[c][r > 2 ? r - 1 : r]);
+                    }
+                }
+            }
+            return cardGrid;
         }
 
         function renderUserCards() {
@@ -419,20 +443,20 @@
                         grid.appendChild(cell);
                     }
                 } else {
-                    let numbers = getCardNumbers(item.cardNum);
+                    let cardItems = getCardNumbers(item.cardNum);
                     let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
-                    let count = 0;
 
                     for (let i = 0; i < 25; i++) {
                         let cell = document.createElement('div');
                         cell.className = 'cell';
+                        let val = cardItems[i];
+
                         if (i === 12) {
                             cell.innerText = '⭐';
                             cell.classList.add('star', 'marked');
                         } else {
-                            let num = numbers[count++];
-                            cell.innerText = num;
-                            if (savedMarks[num]) {
+                            cell.innerText = val;
+                            if (savedMarks[val]) {
                                 cell.classList.add('marked');
                             }
                             
@@ -444,7 +468,7 @@
                                 }
                                 this.classList.toggle('marked');
                                 playSound('mark');
-                                savedMarks[num] = this.classList.contains('marked');
+                                savedMarks[val] = this.classList.contains('marked');
                                 localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
                             };
                         }
@@ -482,24 +506,17 @@
             startCaller();
         } else {
             let timerInterval = setInterval(() => {
-                let activePlayersCount = 5; 
-
                 if (timeLeft > 0) {
                     timeLeft--;
-                    document.getElementById('timer-display').innerText = `⏳ ተጫዋቾች በመጠባበቅ ላይ... (${timeLeft} ሰ)`;
+                    document.getElementById('timer-display').innerText = `⏳ ጨዋታው ሊጀመር ነው... (${timeLeft} ሰ)`;
                     localStorage.setItem('yohans_timer', timeLeft);
                 } else {
-                    if (activePlayersCount > 0) {
-                        clearInterval(timerInterval);
-                        localStorage.setItem('yohans_game_active', 'true');
-                        document.getElementById('timer-display').innerText = `🚀 ጨዋታው ጀምሯል!`;
-                        select1.disabled = true;
-                        select2.disabled = true;
-                        startCaller();
-                    } else {
-                        timeLeft = 45;
-                        document.getElementById('timer-display').innerText = `⚠️ በቂ ተጫዋች የለም! ቆጠራው እንደገና ተጀምሯል...`;
-                    }
+                    clearInterval(timerInterval);
+                    localStorage.setItem('yohans_game_active', 'true');
+                    document.getElementById('timer-display').innerText = `🚀 ጨዋታው ጀምሯል!`;
+                    select1.disabled = true;
+                    select2.disabled = true;
+                    startCaller();
                 }
             }, 1000);
         }
@@ -519,6 +536,7 @@
                     return;
                 }
                 let currentNum = allNums.pop();
+                calledNumbersList.path = currentNum;
                 calledNumbersList.push(currentNum);
                 
                 document.getElementById('called-display').innerText = `🎲 የሚወጣው ቁጥር: ${currentNum}`;
@@ -529,8 +547,8 @@
                 if (autoMark) {
                     [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
                         if (item.cardNum) {
-                            let nums = getCardNumbers(item.cardNum);
-                            if (nums.includes(currentNum)) {
+                            let cardItems = getCardNumbers(item.cardNum);
+                            if (cardItems.includes(currentNum)) {
                                 let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
                                 savedMarks[currentNum] = true;
                                 localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
