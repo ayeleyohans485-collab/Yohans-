@@ -337,7 +337,7 @@
         }
 
         let savedCard1 = localStorage.getItem('yohans_selected_card_1') || "";
-        let savedCard2 = localStorage.getItem('yohans_selected_card_2'] || "";
+        let savedCard2 = localStorage.getItem('yohans_selected_card_2') || "";
         select1.value = savedCard1;
         select2.value = savedCard2;
 
@@ -383,7 +383,6 @@
 
         renderMasterBoard([]);
 
-        // ትክክለኛ የቢንጎ ዓምድ (Column-based) ቁጥሮችን የሚያመነጭ ስልተ-ቀመር
         function getCardNumbers(seed) {
             let cols = [
                 Array.from({length: 15}, (_, i) => i + 1),
@@ -406,7 +405,6 @@
                 cardCols.push(shuffled.slice(0, 5));
             }
 
-            // በ 5x5 ግሪድ መልክ በረድፍ (Row) እንዲቀመጡ ማድረግ (ማዕከላዊውን ካሬ መተው)
             let cardGrid = [];
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 5; c++) {
@@ -430,13 +428,15 @@
 
                 let title = document.createElement('div');
                 title.className = 'card-title';
+                // ካርቴላ ካልተመረጠ ባዶ እንዲል ማድረግ
                 title.innerText = item.cardNum ? `ካርቴላ #${item.cardNum}` : `ካርቴላ አልተመረጠም`;
                 wrapper.appendChild(title);
 
                 let grid = document.createElement('div');
                 grid.className = 'bingo-grid';
 
-                if (!item.cardNum) {
+                // ካርቴላ ካልተመረጠ 25ቲቱን ሳጥኖች ባዶ ማድረግ
+                if (!item.cardNum || item.cardNum === "") {
                     for (let i = 0; i < 25; i++) {
                         let cell = document.createElement('div');
                         cell.className = 'cell';
@@ -536,7 +536,6 @@
                     return;
                 }
                 let currentNum = allNums.pop();
-                calledNumbersList.path = currentNum;
                 calledNumbersList.push(currentNum);
                 
                 document.getElementById('called-display').innerText = `🎲 የሚወጣው ቁጥር: ${currentNum}`;
