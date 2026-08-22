@@ -337,7 +337,7 @@
         }
 
         let savedCard1 = localStorage.getItem('yohans_selected_card_1') || "";
-        let savedCard2 = localStorage.getItem('yohans_selected_card_2') || "";
+        let savedCard2 = localStorage.getItem('yohans_selected_card_2'] || "";
         select1.value = savedCard1;
         select2.value = savedCard2;
 
@@ -383,6 +383,7 @@
 
         renderMasterBoard([]);
 
+        // ቁጥሮች በፍፁም እንዳይደጋገሙ የሚያደርግ ትክክለኛ የካርቴላ አወጣጥ ስልተ-ቀመር
         function getCardNumbers(seed) {
             let cols = [
                 Array.from({length: 15}, (_, i) => i + 1),
@@ -411,7 +412,7 @@
                     if (r === 2 && c === 2) {
                         cardGrid.push('⭐');
                     } else {
-                        cardGrid.push(cardCols[c][r > 2 ? r - 1 : r]);
+                        cardGrid.push(cardCols[c][r]);
                     }
                 }
             }
@@ -428,14 +429,12 @@
 
                 let title = document.createElement('div');
                 title.className = 'card-title';
-                // ካርቴላ ካልተመረጠ ባዶ እንዲል ማድረግ
                 title.innerText = item.cardNum ? `ካርቴላ #${item.cardNum}` : `ካርቴላ አልተመረጠም`;
                 wrapper.appendChild(title);
 
                 let grid = document.createElement('div');
                 grid.className = 'bingo-grid';
 
-                // ካርቴላ ካልተመረጠ 25ቲቱን ሳጥኖች ባዶ ማድረግ
                 if (!item.cardNum || item.cardNum === "") {
                     for (let i = 0; i < 25; i++) {
                         let cell = document.createElement('div');
@@ -562,14 +561,52 @@
             }, 3000);
         }
 
+        // የቢንጎ ማረጋገጫ (Validation Logic) - መስመር መሟላቱን ማረጋገጥ
         function checkBingo() {
             let gameActive = localStorage.getItem('yohans_game_active') === 'true';
             if (!gameActive) {
                 alert('⚠️ ጨዋታው ገና አልጀመረም!');
                 return;
             }
-            playSound('bingo');
-            alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ ተረጋግጧል!');
+
+            let hasWon = false;
+            [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
+                if (item.cardNum) {
+                    let cardItems = getCardNumbers(item.cardNum);
+                    let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
+                    
+                    let gridMatrix = [];
+                    for (let r = 0; r < 5; r++) {
+                        let row = [];
+                        for (let c = 0; c < 5; c++) {
+                            let idx = r * 5 + c;
+                            let val = cardItems[idx];
+                            let isMarked = (idx === 12) || savedMarks[val];
+                            row.push(isMarked);
+                        }
+                        gridMatrix.push(row);
+                    }
+
+                    // አግድም (Rows) ወይም ቁልቁል (Columns) መሟላታቸውን ማረጋገጥ
+                    for (let i = 0; i < 5; i++) {
+                        if (gridMatrix[i].every(val => val)) hasWon = true; // Row
+                        if (gridMatrix.every(row => row[i])) hasWon = true; // Column
+                    }
+                    // ሰያፍ (Diagonals) መሟላታቸውን ማረጋገጥ
+                    if ([0,1,2,3,4].every(i => gridMatrix[i][i])) hasWon = true;
+                    if ([0,1,2,3,4].every(i => gridMatrix[i][4 - i])) hasWon = true;
+                }
+            });
+
+            if (hasWon) {
+                playSound('bingo');
+                userBalance += 100.00; // የማሸነፊያ ሽልማት
+                localStorage.setItem('yohans_balance', userBalance);
+                updateWalletDisplay();
+                alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ በትክክል ተረጋግጧል! 100 ETB አሸንፈዋል!');
+            } else {
+                alert('❌ እስካሁን ሙሉ መስመር (Bingo Line) አልሞላም! ተጨማሪ ቁጥሮችን ይጠብቁ።');
+            }
         }
 
         function leaveGame() {
