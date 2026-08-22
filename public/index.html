@@ -28,6 +28,18 @@
             margin-left: auto;
             margin-right: auto;
         }
+        .timer-box {
+            background: #b45309;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            max-width: 340px;
+            margin-left: auto;
+            margin-right: auto;
+        }
         .auto-mark-box {
             background: #1e293b;
             padding: 6px 12px;
@@ -204,7 +216,11 @@
 <body>
 
     <div class="wallet-box" id="wallet-display">
-        🏆 የድርሻዎ (20%): 592.00 ETB
+        🏆 የድርሻዎ: 0.00 ETB
+    </div>
+
+    <div class="timer-box" id="timer-display">
+        ⏳ ተጫዋቾች በመጠባበቅ ላይ... (45 ሰ)
     </div>
 
     <div class="auto-mark-box">
@@ -227,7 +243,7 @@
     <div class="master-board" id="master-board"></div>
 
     <div class="number-board" id="called-display">
-        🎲 የወጣው ቁጥር: 49
+        🎲 የሚወጣው ቁጥር: ጨዋታው ገና አልጀመረም
     </div>
 
     <div class="cards-container" id="cards-container"></div>
@@ -249,13 +265,33 @@
         <div class="nav-item active"><span class="nav-icon">🎮</span>Game</div>
         <div class="nav-item"><span class="nav-icon">📊</span>Scores</div>
         <div class="nav-item"><span class="nav-icon">📜</span>History</div>
-        <div class="nav-item"><span class="nav-icon">💰</span>Wallet</div>
+        <div class="nav-item" onclick="addInviteBonus()"><span class="nav-icon">💰</span>Invite</div>
         <div class="nav-item"><span class="nav-icon">👤</span>Profile</div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+
+        // 밸런ስ እና የቦነስ ሎጂክ (Balance & Bonus System)
+        let userBalance = parseFloat(localStorage.getItem('yohans_balance'));
+        if (isNaN(userBalance)) {
+            userBalance = 10.00; // ለመጀመሪያ ጊዜ ሲቀላቀል የ 10 ብር ቦነስ
+            localStorage.setItem('yohans_balance', userBalance);
+            alert('🎉 እንኳን ደህና መጡ! ቦቱን በመቀላቀልዎ 10 ETB ቦነስ ተበርክቶልዎታል!');
+        }
+
+        function updateWalletDisplay() {
+            document.getElementById('wallet-display').innerText = `🏆 የድርሻዎ: ${userBalance.toFixed(2)} ETB`;
+        }
+        updateWalletDisplay();
+
+        function addInviteBonus() {
+            userBalance += 10.00;
+            localStorage.setItem('yohans_balance', userBalance);
+            updateWalletDisplay();
+            alert('✅ ጓደኛ በመጋበዝዎ 10 ETB ቦነስ አግኝተዋል!');
+        }
 
         function playSound(type) {
             try {
@@ -268,6 +304,10 @@
                     osc.frequency.setValueAtTime(600, ctx.currentTime);
                     gain.gain.setValueAtTime(0.1, ctx.currentTime);
                     osc.start(); osc.stop(ctx.currentTime + 0.08);
+                } else if (type === 'call') {
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    osc.start(); osc.stop(ctx.currentTime + 0.12);
                 } else if (type === 'bingo') {
                     osc.frequency.setValueAtTime(800, ctx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.3);
@@ -279,6 +319,15 @@
 
         const select1 = document.getElementById('card-select-1');
         const select2 = document.getElementById('card-select-2');
+
+        let defaultOpt1 = document.createElement('option');
+        defaultOpt1.value = ""; defaultOpt1.innerText = "ካርቴላ ይምረጡ";
+        select1.appendChild(defaultOpt1);
+
+        let defaultOpt2 = document.createElement('option');
+        defaultOpt2.value = ""; defaultOpt2.innerText = "ካርቴላ ይምረጡ";
+        select2.appendChild(defaultOpt2);
+
         for (let i = 1; i <= 200; i++) {
             let opt1 = document.createElement('option');
             opt1.value = i; opt1.innerText = `ካርቴላ #${i}`;
@@ -289,8 +338,8 @@
             select2.appendChild(opt2);
         }
 
-        let savedCard1 = localStorage.getItem('yohans_selected_card_1') || 6;
-        let savedCard2 = localStorage.getItem('yohans_selected_card_2') || 2;
+        let savedCard1 = localStorage.getItem('yohans_selected_card_1') || "";
+        let savedCard2 = localStorage.getItem('yohans_selected_card_2') || "";
         select1.value = savedCard1;
         select2.value = savedCard2;
 
@@ -334,7 +383,7 @@
             }
         }
 
-        renderMasterBoard([27, 4, 39, 28, 49]);
+        renderMasterBoard([]);
 
         function getCardNumbers(seed) {
             let numbers = [];
@@ -357,37 +406,50 @@
 
                 let title = document.createElement('div');
                 title.className = 'card-title';
-                title.innerText = `ካርቴላ #${item.cardNum}`;
+                title.innerText = item.cardNum ? `ካርቴላ #${item.cardNum}` : `ካርቴላ አልተመረጠም`;
                 wrapper.appendChild(title);
 
                 let grid = document.createElement('div');
                 grid.className = 'bingo-grid';
 
-                let numbers = getCardNumbers(item.cardNum);
-                let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
-                let count = 0;
-
-                for (let i = 0; i < 25; i++) {
-                    let cell = document.createElement('div');
-                    cell.className = 'cell';
-                    if (i === 12) {
-                        cell.innerText = '⭐';
-                        cell.classList.add('star', 'marked');
-                    } else {
-                        let num = numbers[count++];
-                        cell.innerText = num;
-                        if (savedMarks[num]) {
-                            cell.classList.add('marked');
-                        }
-                        
-                        cell.onclick = function() {
-                            this.classList.toggle('marked');
-                            playSound('mark');
-                            savedMarks[num] = this.classList.contains('marked');
-                            localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
-                        };
+                if (!item.cardNum) {
+                    for (let i = 0; i < 25; i++) {
+                        let cell = document.createElement('div');
+                        cell.className = 'cell';
+                        grid.appendChild(cell);
                     }
-                    grid.appendChild(cell);
+                } else {
+                    let numbers = getCardNumbers(item.cardNum);
+                    let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
+                    let count = 0;
+
+                    for (let i = 0; i < 25; i++) {
+                        let cell = document.createElement('div');
+                        cell.className = 'cell';
+                        if (i === 12) {
+                            cell.innerText = '⭐';
+                            cell.classList.add('star', 'marked');
+                        } else {
+                            let num = numbers[count++];
+                            cell.innerText = num;
+                            if (savedMarks[num]) {
+                                cell.classList.add('marked');
+                            }
+                            
+                            cell.onclick = function() {
+                                let gameActive = localStorage.getItem('yohans_game_active') === 'true';
+                                if (!gameActive) {
+                                    alert('⚠️ ጨዋታው ገና አልጀመረም!');
+                                    return;
+                                }
+                                this.classList.toggle('marked');
+                                playSound('mark');
+                                savedMarks[num] = this.classList.contains('marked');
+                                localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
+                            };
+                        }
+                        grid.appendChild(cell);
+                    }
                 }
                 wrapper.appendChild(grid);
                 container.appendChild(wrapper);
@@ -395,6 +457,11 @@
         }
 
         function changeCard(cardIndex) {
+            let gameActive = localStorage.getItem('yohans_game_active') === 'true';
+            if (gameActive) {
+                alert('⚠️ ጨዋታው በመካሄድ ላይ ስለሆነ ካርቴላ መቀየር አይቻልም!');
+                return;
+            }
             if (cardIndex === 1) {
                 savedCard1 = select1.value;
                 localStorage.setItem('yohans_selected_card_1', savedCard1);
@@ -405,12 +472,91 @@
             renderUserCards();
         }
 
+        let timeLeft = parseInt(localStorage.getItem('yohans_timer')) || 45;
+        let gameActive = localStorage.getItem('yohans_game_active') === 'true';
+
+        if (gameActive) {
+            document.getElementById('timer-display').innerText = '🚀 ጨዋታው እየተካሄደ ነው!';
+            select1.disabled = true;
+            select2.disabled = true;
+            startCaller();
+        } else {
+            let timerInterval = setInterval(() => {
+                let activePlayersCount = 5; 
+
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    document.getElementById('timer-display').innerText = `⏳ ተጫዋቾች በመጠባበቅ ላይ... (${timeLeft} ሰ)`;
+                    localStorage.setItem('yohans_timer', timeLeft);
+                } else {
+                    if (activePlayersCount > 0) {
+                        clearInterval(timerInterval);
+                        localStorage.setItem('yohans_game_active', 'true');
+                        document.getElementById('timer-display').innerText = `🚀 ጨዋታው ጀምሯል!`;
+                        select1.disabled = true;
+                        select2.disabled = true;
+                        startCaller();
+                    } else {
+                        timeLeft = 45;
+                        document.getElementById('timer-display').innerText = `⚠️ በቂ ተጫዋች የለም! ቆጠራው እንደገና ተጀምሯል...`;
+                    }
+                }
+            }, 1000);
+        }
+
+        let calledNumbersList = JSON.parse(localStorage.getItem('yohans_called_numbers')) || [];
+
+        function startCaller() {
+            let allNums = JSON.parse(localStorage.getItem('yohans_remaining_nums'));
+            if (!allNums || allNums.length === 0) {
+                allNums = Array.from({length: 75}, (_, i) => i + 1);
+                allNums.sort(() => Math.random() - 0.5);
+            }
+
+            let callerInterval = setInterval(() => {
+                if(allNums.length === 0) {
+                    clearInterval(callerInterval);
+                    return;
+                }
+                let currentNum = allNums.pop();
+                calledNumbersList.push(currentNum);
+                
+                document.getElementById('called-display').innerText = `🎲 የሚወጣው ቁጥር: ${currentNum}`;
+                playSound('call');
+                
+                renderMasterBoard(calledNumbersList);
+
+                if (autoMark) {
+                    [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
+                        if (item.cardNum) {
+                            let nums = getCardNumbers(item.cardNum);
+                            if (nums.includes(currentNum)) {
+                                let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
+                                savedMarks[currentNum] = true;
+                                localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
+                            }
+                        }
+                    });
+                    renderUserCards();
+                }
+
+                localStorage.setItem('yohans_remaining_nums', JSON.stringify(allNums));
+                localStorage.setItem('yohans_called_numbers', JSON.stringify(calledNumbersList));
+            }, 3000);
+        }
+
         function checkBingo() {
+            let gameActive = localStorage.getItem('yohans_game_active') === 'true';
+            if (!gameActive) {
+                alert('⚠️ ጨዋታው ገና አልጀመረም!');
+                return;
+            }
             playSound('bingo');
             alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ ተረጋግጧል!');
         }
 
         function leaveGame() {
+            localStorage.clear();
             window.location.reload();
         }
 
