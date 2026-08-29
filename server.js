@@ -22,30 +22,6 @@ mongoose.connect(MONGO_URI, {
     console.log('✅ ከ MongoDB ጋር ተገናኝቷል');
 }).catch(err => {
     console.error('❌ የ MongoDB ግንኙነት ተሳክቷል:', err);
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-const mongoose = require('mongoose');
-const { Telegraf, Markup } = require('telegraf');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/yohans_bingo';
-mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('✅ ከ MongoDB ጋር ተገናኝቷል');
-}).catch(err => {
-    console.error('❌ የ MongoDB ግንኙነት ተሳክቷል:', err);
 });
 
 // User Schema with Referral Support
@@ -56,7 +32,7 @@ const userSchema = new mongoose.Schema({
     balance: { type: Number, default: 0.00 },
     bankAccount: { type: String, default: '' },
     referredBy: { type: String, default: null },
-    referralCount: { type: Number, default: 0 }, // የጋበዟቸው ሰዎች ብዛት
+    referralCount: { type: Number, default: 0 },
     pendingAction: { type: String, default: null }
 });
 const User = mongoose.model('User', userSchema);
@@ -74,10 +50,10 @@ app.get('/api/user/:telegramId', async (req, res) => {
     }
 });
 
-// Telegram Bot Setup via Webhook for Render
+// Telegram Bot Setup via Long Polling (ፈጣን እና የማይቀዘቅዝ)
 const token = process.env.BOT_TOKEN;
 const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
-const ADMIN_CHAT_ID = '7833077977'; // የአድሚን ቴሌግራም ID
+const ADMIN_CHAT_ID = '7833077977';
 
 if (!token) {
     console.error('❌ BOT_TOKEN በ Environment Variables ውስጥ አልተገኘም!');
@@ -114,7 +90,7 @@ bot.start(async (ctx) => {
     ]).resize().oneTime());
 });
 
-// ስልክ ቁጥር ሲያጋሩ (ምዝገባ ሲጠናቀቅ)
+// ስልክ ቁጥር ሲያጋሩ
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
@@ -154,7 +130,6 @@ bot.on('contact', async (ctx) => {
             }
         }
 
-        // ዋናው ሜኑ (Referral 🎁 ቁልፍን ጨምሮ)
         await ctx.reply(
             `✅ Registration complete! You've received your 10.00 ETB welcome bonus.\n\n🎮 Choose an option below:`,
             Markup.keyboard([
@@ -263,10 +238,11 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// Express route for Telegram Webhook
-app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
-bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`).catch(err => {
-    console.log('⚠️ የዌብሁክ ማቀናበር ትንሽ ዘግይቷል:', err.message);
+// ቦቱን በ Long Polling ማስጀመር (Webhookን ማጥፋት እና ቀጥታ ማገናኘት)
+bot.launch().then(() => {
+    console.log('🤖 ቴሌግራም ቦቱ በ (Long Polling) ፈጣን በሆነ ሁኔታ ተጀምሯል!');
+}).catch(err => {
+    console.error('❌ ቦቱን ማስጀመር አልተቻለም:', err);
 });
 
 // Bingo Game Logic State
@@ -317,7 +293,7 @@ function startCaller() {
             calledNumbers
         });
     }, 3000);
-});
+}
 
 io.on('connection', (socket) => {
     socket.emit('init_state', {
@@ -331,3 +307,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 ሰርቨሩ በፖርት ${PORT} ተጀምሯል`);
 });
+
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
