@@ -24,36 +24,22 @@ mongoose.connect(MONGO_URI, {
     console.error('❌ የ MongoDB ግንኙነት ተሳክቷል:', err);
 });
 
-// User Schema & Model with Wallet Support
+// User Schema with Phone Number Support
 const userSchema = new mongoose.Schema({
     telegramId: { type: String, required: true, unique: true },
     username: String,
-    balance: { type: Number, default: 10.00 },
+    phoneNumber: { type: String, default: '' },
+    balance: { type: Number, default: 0.00 },
     bankAccount: { type: String, default: '' }
 });
 const User = mongoose.model('User', userSchema);
 
-// Deposit & Balance API Routes
-app.post('/api/deposit', async (req, res) => {
-    try {
-        const { telegramId, amount, txRef } = req.body;
-        let user = await User.findOne({ telegramId });
-        if (!user) {
-            user = new User({ telegramId, balance: 10.00 });
-        }
-        user.balance += parseFloat(amount || 0);
-        await user.save();
-        res.json({ success: true, newBalance: user.balance });
-    } catch (e) {
-        res.status(500).json({ success: false, error: e.message });
-    }
-});
-
+// API Routes
 app.get('/api/user/:telegramId', async (req, res) => {
     try {
         let user = await User.findOne({ telegramId: req.params.telegramId });
         if (!user) {
-            user = await User.create({ telegramId: req.params.telegramId, balance: 10.00 });
+            return res.json({ success: true, balance: 0.00 });
         }
         res.json({ success: true, balance: user.balance });
     } catch (e) {
@@ -61,7 +47,7 @@ app.get('/api/user/:telegramId', async (req, res) => {
     }
 });
 
-// Telegram Bot Setup via Webhook for Render
+// Telegram Bot Setup
 const token = process.env.BOT_TOKEN;
 const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
 
@@ -71,31 +57,68 @@ if (!token) {
 
 const bot = new Telegraf(token);
 
+// /start ሲሉ ስልክ ቁጥር እንዲያጋሩ መጠየቅ (ቪዲዮው ላይ እንዳለው)
 bot.start(async (ctx) => {
+    let telegramId = ctx.from.id.toString();
+    try {
+        let user = await User.findOne({ telegramId });
+        if (user && user.phoneNumber) {
+            // ቀድሞ የተመዘገበ ከሆነ
+            return ctx.reply(`👋 እንኳን ወደ Hamer/Yohans Bingo በደህና መጡ!\n\n💰 የአሁን ሂሳብዎ: ${user.balance.toFixed(2)} ETB`, Markup.keyboard([
+                [Markup.button.webApp('🎮 Play Game', webAppUrl)],
+                [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
+                [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')]
+            ]).resize());
+        }
+    } catch (e) {
+        console.error('Start error:', e);
+    }
+
+    // አዲስ ከሆነ ስልክ ቁጥር እንዲያጋራ መጠየቅ
+    ctx.reply(`👋 Welcome to Hamer/Yohans Bingo! To register, please share your phone number using the button below.`, Markup.keyboard([
+        [Markup.button.contactRequest('📱 Share Contact')]
+    ]).resize().oneTime());
+});
+
+// ተጠቃሚው ስልክ ቁጥሩን ሲልክ የሚመዘገብበት ክፍል
+bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
         let username = ctx.from.username || 'User';
+        let phoneNumber = ctx.message.contact.phone_number;
+
         let user = await User.findOne({ telegramId });
         if (!user) {
-            await User.create({ telegramId, username, balance: 10.00 });
+            // አዲስ ዩዘር ሲፈጥር 10 ብር ቦነስ ይሰጠዋል
+            await User.create({
+                telegramId,
+                username,
+                phoneNumber,
+                balance: 10.00
+            });
+        } else {
+            user.phoneNumber = phoneNumber;
+            if (user.balance === 0) user.balance = 10.00;
+            await user.save();
         }
-    } catch (e) {
-        console.error('Start user creation error:', e);
-    }
 
-    ctx.reply(`🎮 እንኳን ወደ Yohans Bingo በደህና መጡ!\n\nእውነተኛ ገንዘብ በመጫወት ሽልማት ያግኙ።`, Markup.keyboard([
-        [Markup.button.webApp('🎮 Play Game', webAppUrl), Markup.button.text('Register 📝')],
-        [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
-        [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')],
-        [Markup.button.text('Contact Support 📞')]
-    ]).resize());
+        ctx.reply(`✅ Registration complete! You've received a 10.00 ETB welcome bonus.`, Markup.keyboard([
+            [Markup.button.webApp('🎮 Play Game', webAppUrl)],
+            [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
+            [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')]
+        ]).resize());
+
+    } catch (e) {
+        console.error('Contact registration error:', e);
+        ctx.reply('❌ ምዝገባ ላይ ችግር ተፈጥሯል፣ እባክዎ /start በማለት እንደገና ይሞክሩ።');
+    }
 });
 
 bot.hears('Check Balance 💰', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
         let user = await User.findOne({ telegramId });
-        let balance = user ? user.balance : 10.00;
+        let balance = user ? user.balance : 0.00;
         ctx.reply(`💰 የአሁን እውነተኛ ሂሳብዎ (Balance): ${balance.toFixed(2)} ETB`);
     } catch (e) {
         ctx.reply('❌ ሂሳብዎትን ማየት አልተቻለም።');
@@ -107,36 +130,14 @@ bot.hears('Instruction 📖', (ctx) => {
 });
 
 bot.hears('Deposit 💳', (ctx) => {
-    ctx.reply(`💳 ሂሳብ ለመሙላት በLattuu SACCO ወይም በባንክ አካውንት ከፍሎ የትራንዛክሽን ሪፈረንስ ይላኩ:\n\n🏦 አካውንት: 1000xxxxxx\n👤 ስም: Yohans Bingo`);
+    ctx.reply(`💳 ሂሳብ ለመሙላት በባንክ አካውንት ከፍሎ የትራንዛክሽን ሪፈረንስ ይላኩ:\n\n🏦 አካውንት: 1000xxxxxx\n👤 ስም: Yohans Bingo`);
 });
 
 bot.hears('Withdraw 🏦', (ctx) => {
     ctx.reply(`🏦 ከሂሳብዎ ገንዘብ ለማውጣት የባንክ አካውንት ቁጥርዎን ይላኩ።`);
 });
 
-bot.hears('Register 📝', async (ctx) => {
-    try {
-        let telegramId = ctx.from.id.toString();
-        let username = ctx.from.username || 'User';
-        let user = await User.findOne({ telegramId });
-        
-        if (!user) {
-            await User.create({ telegramId, username, balance: 10.00 });
-            ctx.reply(`📝 ምዝገባዎ ተሳክቷል! 10.00 ETB የቦነስ ቀሪ ተሰጥቶዎታል።`);
-        } else {
-            ctx.reply(`📝 ቀደም ሲል ተመዝግበዋል! የአሁን ሂሳብዎ: ${user.balance.toFixed(2)} ETB ነው።`);
-        }
-    } catch (e) {
-        console.error('Register error:', e);
-        ctx.reply('❌ ምዝገባ ላይ ችግር ተፈጥሯል፣ እባክዎ እንደገና ይሞክሩ።');
-    }
-});
-
-bot.hears('Contact Support 📞', (ctx) => {
-    ctx.reply(`📞 ለድጋፍ @Yohans_Support ያነጋግሩ።`);
-});
-
-// Express route for Telegram Webhook with safety timeout catch
+// Express route for Telegram Webhook
 app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
 bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`).catch(err => {
     console.log('⚠️ የዌብሁክ ማቀናበር ትንሽ ዘግይቷል:', err.message);
@@ -201,7 +202,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
 server.listen(PORT, () => {
-    console.log(`🚀 እውነተኛ ሰርቨር እና ዌብሁክ ቦቱ በፖርት ${PORT} በትክክል ተጀምረዋል`);
+    console.log(`🚀 ሰርቨሩ በፖርት ${PORT} ተጀምሯል`);
 });
