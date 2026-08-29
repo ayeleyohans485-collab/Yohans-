@@ -171,11 +171,11 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 ሰርቨር በፖርት ${PORT} እየሰራ ነው`);
     
-    // ቦቱን ከሰርቨር መነሳት ጋር በአንድ ላይ ማስጀመር
+    // ቦቱን ማስጀመር (ለ Render የተስተካከለ)
     bot.launch().then(() => {
-        console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል');
+        console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል (Bot launched successfully)');
     }).catch(err => {
-        console.error('❌ ቦቱን ማስጀመር አልተቻለም:', err);
+        console.error('❌ የቦት ማስጀመሪያ ስህተት (Bot launch error):', err);
     });
 });
 
