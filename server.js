@@ -60,14 +60,15 @@ app.get('/api/user/:telegramId', async (req, res) => {
     }
 });
 
-// Telegram Bot Setup
+// Telegram Bot Setup via Webhook for Render
 const token = process.env.BOT_TOKEN;
+const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
+
 if (!token) {
     console.error('❌ BOT_TOKEN በ Environment Variables ውስጥ አልተገኘም!');
 }
 
 const bot = new Telegraf(token);
-const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
 
 bot.start((ctx) => {
     ctx.reply(`🎮 እንኳን ወደ Yohans Bingo በደህና መጡ!`, Markup.keyboard([
@@ -108,6 +109,10 @@ bot.hears('Register 📝', (ctx) => {
 bot.hears('Contact Support 📞', (ctx) => {
     ctx.reply(`📞 ለድጋፍ @Yohans_Support ያነጋግሩ።`);
 });
+
+// Express route for Telegram Webhook (ቦቱ ከቴሌግራም መልዕክት እንዲቀበል የሚያደርግ ዌብሁክ ፕላትፎርም)
+app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
+bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`);
 
 // Bingo Game Logic State
 let gameTimer = 45;
@@ -169,17 +174,6 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 
-// ሰርቨሩን ማስጀመር
 server.listen(PORT, () => {
-    console.log(`🚀 ሰርቨር በፖርት ${PORT} እየሰራ ነው`);
+    console.log(`🚀 ሰርቨር እና ዌብሁክ ቦቱ በፖርት ${PORT} በትክክል ተጀምረዋል`);
 });
-
-// ቦቱን ራሱን ችሎ በተናጠል ማስጀመር
-bot.launch().then(() => {
-    console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል');
-}).catch((err) => {
-    console.error('❌ የቦት ማስጀመሪያ ስህተት:', err);
-});
-
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
