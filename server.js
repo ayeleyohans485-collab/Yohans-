@@ -1,137 +1,132 @@
-const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
+const mongoose = require('mongoose');
 
-const token = process.env.BOT_TOKEN;
-if (!token) {
-    console.error("Critical Error: BOT_TOKEN is not set in environment variables!");
-    process.exit(1);
-}
-
-const URL = 'https://yohans-vn77.onrender.com';
-const bot = new TelegramBot(token);
 const app = express();
-const PORT = process.env.PORT || 10000;
+const server = http.createServer(app);
+const io = new Server(server);
 
-// Database ፋይል (የተጠቃሚዎችን ሂሳብ እና መረጃ ለመያዝ)
-const DB_FILE = path.join(__dirname, 'db.json');
-let db = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : { users: {}, history: [] };
-
-function saveDb() { 
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); 
-}
-
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// የቴሌግራም ዌብሆክ (Webhook) መቀበያ
-app.post(`/bot${token}`, (req, res) => { 
-    bot.processUpdate(req.body); 
-    res.sendStatus(200); 
+// MongoDB Connection
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/yohans_bingo';
+mongoose.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('✅ ከ MongoDB ጋር ተገናኝቷል');
+}).catch(err => {
+    console.error('❌ የ MongoDB ግንኙነት ተሳክቷል:', err);
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// User Schema & Model
+const userSchema = new mongoose.Schema({
+    telegramId: { type: String, required: true, unique: true },
+    username: String,
+    balance: { type: Number, default: 10.00 }
 });
+const User = mongoose.model('User', userSchema);
 
-app.listen(PORT, async () => {
-    console.log(`Yohans Bingo Server running on port ${PORT}`);
+// Deposit & Balance API Routes
+app.post('/api/deposit', async (req, res) => {
     try {
-        await bot.setWebHook(`${URL}/bot${token}`);
-        console.log("Webhook successfully set.");
-    } catch (err) {
-        console.error("Webhook error:", err.message);
+        const { telegramId, amount, txRef } = req.body;
+        let user = await User.findOne({ telegramId });
+        if (!user) {
+            user = new User({ telegramId, balance: 10.00 });
+        }
+        user.balance += parseFloat(amount || 0);
+        await user.save();
+        res.json({ success: true, newBalance: user.balance });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 
-// የቦት ዋና ሜኑ አዝራሮች (እንደ Beteseb Bingo አቀማመጥ)
-const mainKeyboard = {
-    reply_markup: {
-        keyboard: [
-            [{ text: '🎮 Play', web_app: { url: URL } }, { text: 'Register 📝' }],
-            [{ text: 'Check Balance 💰' }, { text: 'Deposit 💳' }],
-            [{ text: 'Contact Support 📞' }, { text: 'Instruction 📖' }],
-            [{ text: 'Transfer 💸' }, { text: 'Withdraw 🏦' }]
-        ],
-        resize_keyboard: true
+app.get('/api/user/:telegramId', async (req, res) => {
+    try {
+        let user = await User.findOne({ telegramId: req.params.telegramId });
+        if (!user) {
+            user = await User.create({ telegramId: req.params.telegramId, balance: 10.00 });
+        }
+        res.json({ success: true, balance: user.balance });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
-};
+});
 
-// /start ትዕዛዝ
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    if (!db.users[chatId]) {
-        db.users[chatId] = { balance: 0, gamesPlayed: 0, wins: 0 };
-        saveDb();
+// Bingo Game Logic State
+let gameTimer = 45;
+let gameActive = false;
+let calledNumbers = [];
+let remainingNums = [];
+
+function resetGame() {
+    gameTimer = 45;
+    gameActive = false;
+    calledNumbers = [];
+    remainingNums = Array.from({length: 75}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+}
+
+resetGame();
+
+// Timer and Number Caller Loop
+setInterval(() => {
+    if (!gameActive) {
+        if (gameTimer > 0) {
+            gameTimer--;
+        } else {
+            gameActive = true;
+            startCaller();
+        }
+        io.emit('timer_update', { timer: gameTimer, gameActive });
     }
+}, 1000);
+
+let callerInterval = null;
+function startCaller() {
+    if (callerInterval) clearInterval(callerInterval);
     
-    bot.sendMessage(chatId, `🎉 **Welcome to Yohans Bingo!** \n\nእባክዎ ከታች ከሚገኙት አማራጮች የሚፈልጉትን ይምረጡ።`, {
-        ...mainKeyboard,
-        parse_mode: 'Markdown'
+    callerInterval = setInterval(() => {
+        if (remainingNums.length === 0) {
+            clearInterval(callerInterval);
+            setTimeout(() => {
+                resetGame();
+                io.emit('game_reset', { gameTimer, gameActive });
+            }, 5000);
+            return;
+        }
+        let currentNumber = remainingNums.pop();
+        calledNumbers.push(currentNumber);
+
+        io.emit('number_called', {
+            currentNumber,
+            calledNumbers
+        });
+    }, 3000);
+}
+
+// Socket.io Connection
+io.on('connection', (socket) => {
+    console.log('👤 ተጠቃሚ ተገናኝቷል:', socket.id);
+
+    socket.emit('init_state', {
+        gameTimer,
+        gameActive,
+        calledNumbers
+    });
+
+    socket.on('disconnect', () => {
+        console.log('👋 ተጠቃሚ ወጥቷል:', socket.id);
     });
 });
 
-// የመልእክቶች እና የአዝራሮች ምላሽ
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
-
-    if (!text || text.startsWith('/start')) return;
-
-    if (!db.users[chatId]) {
-        db.users[chatId] = { balance: 0, gamesPlayed: 0, wins: 0 };
-        saveDb();
-    }
-
-    if (text === 'Check Balance 💰') {
-        bot.sendMessage(chatId, `💰 Your current balance: **${db.users[chatId].balance} ETB**`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    } 
-    else if (text === 'Deposit 💳') {
-        bot.sendMessage(chatId, `💳 **ሂሳብ ለመሙላት:**\n\nእባክዎ የሚፈልጉትን ገንዘብ ከታች ባለው አካውንት ያስገቡ:\n\n📱 **ስልክ ቁጥር:** 0938331486\n👤 **ስም:** Yohans Ayele\n\nከፍለው ሲጨርሱ የግብይት ማረጋገጫ ቁጥርዎን (Transaction Code) በዚህ ቦት ላይ ይላኩልን።`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
-    else if (text === 'Register 📝') {
-        bot.sendMessage(chatId, `✅ **Player registered successfully!**\nአሁን ጨዋታውን መጀመር ይችላሉ።`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
-    else if (text === 'Instruction 📖') {
-        bot.sendMessage(chatId, `📖 **የጨዋታ መመሪያ:**\n1. 🎮 Play የሚለውን በመጫን ሚኒ አፑን ይክፈቱ።\n2. 💳 ሒሳብ በመሙላት ካርቴላ ይግዙ።\n3. ቁጥሮች ሲጠሩ እየተከታተሉ ቢንጎ ይበሉ።`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
-    else if (text === 'Contact Support 📞') {
-        bot.sendMessage(chatId, `📞 **የዕርዳታ ማዕከል (Support):**\nማንኛውም ችግር ሲያጋጥብዎት ከዚህ በታች ባለው አድራሻ ያግኙን:\n📱 0938331486 (Yohans Ayele)`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
-    else if (text === 'Transfer 💸') {
-        bot.sendMessage(chatId, `💸 ገንዘብ ለሌላ ተጠቃሚ ለማስተላለፍ የሚፈልጉትን መለያ (User ID) እና መጠን ይላኩ።`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
-    else if (text === 'Withdraw 🏦') {
-        bot.sendMessage(chatId, `🏦 ከሂሳብዎ ገንዘብ ለማውጣት የባንክ አካውንት ቁጥርዎን ይላኩ።`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
-    else if (text.length >= 6 && !text.startsWith('/')) {
-        db.users[chatId].balance += 300;
-        saveDb();
-        bot.sendMessage(chatId, `✅ **Deposit Approved!**\n300 ETB ወደ ሒሳብዎ ገብቷል። አሁን ያለው ጠቅላላ ሒሳብ: **${db.users[chatId].balance} ETB**`, { 
-            ...mainKeyboard, 
-            parse_mode: 'Markdown' 
-        });
-    }
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 ሰርቨር በፖርት ${PORT} እየሰራ ነው`);
 });
