@@ -1,18 +1,15 @@
 {
   "name": "yohans-bingo",
   "version": "1.0.0",
-  "description": "Yohans Bingo Telegram Mini App and Bot",
+  "description": "Yohans Bingo Game Bot and Mini App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "mongoose": "^8.3.1",
-    "socket.io": "^4.7.5",
-    "telegraf": "^4.16.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "socket.io": "^4.7.2",
+    "telegraf": "^4.12.2"
   }
 }
