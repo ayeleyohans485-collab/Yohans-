@@ -83,19 +83,20 @@ app.post('/api/select-cards', async (req, res) => {
     }
 });
 
-// Timer Loop
+// Timer Loop: ቢያንስ 1 ተጫዋች ካርቴላ ከያዘ ብቻ ሰዓቱ ይቀንሳል
 setInterval(() => {
     if (!gameActive) {
-        if (gameTimer > 0) {
-            gameTimer--;
-        } else {
-            if (activePlayers.length > 0) {
+        if (activePlayers.length > 0) {
+            if (gameTimer > 0) {
+                gameTimer--;
+            } else {
                 gameActive = true;
                 startCaller();
-            } else {
-                gameTimer = 45; 
             }
+        } else {
+            gameTimer = 45; // ተጫዋች ከሌለ ሰዓቱ 45 ሆኖ ይጠብቃል
         }
+
         io.emit('timer_update', { 
             timer: gameTimer, 
             gameActive, 
@@ -156,6 +157,7 @@ bot.start(async (ctx) => {
     ]).resize().oneTime());
 });
 
+// Share Contact Handler
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
@@ -164,20 +166,27 @@ bot.on('contact', async (ctx) => {
 
         let user = await User.findOne({ telegramId });
         if (!user) {
-            await User.create({ telegramId, username, phoneNumber, balance: 10.00, playWallet: 0.00 });
+            await User.create({ 
+                telegramId, 
+                username, 
+                phoneNumber, 
+                balance: 10.00, 
+                playWallet: 0.00 
+            });
         } else {
             user.phoneNumber = phoneNumber;
             if (user.balance < 10) user.balance = 10.00;
             await user.save();
         }
 
-        await ctx.reply(`✅ Registration complete!`, Markup.keyboard([
+        await ctx.reply(`✅ ምዝገባዎ ተጠናቋል! 10.00 ብር ቦነስ ተሰጥቶዎታል።`, Markup.keyboard([
             [Markup.button.webApp('🎮 Play Game', webAppUrl)],
             [Markup.button.text('Check Balance 💰'), Markup.button.text('Referral 🎁')],
             [Markup.button.text('Deposit Telebirr 💳'), Markup.button.text('Withdraw Telebirr 🏦')]
         ]).resize());
     } catch (e) {
-        console.error(e);
+        console.error('Contact error:', e);
+        ctx.reply(`⚠️ ስህተት አጋጥሟል፣ እባክዎ እንደገና ይሞክሩ።`);
     }
 });
 
@@ -190,7 +199,7 @@ bot.hears('Check Balance 💰', async (ctx) => {
 });
 
 bot.hears('Deposit Telebirr 💳', async (ctx) => {
-    ctx.reply(`📱 በቴሌብር ሂሳብ ለመሙላት (Deposit):\n\nእባክዎ ከታች ባለው የንግድ/በግል የቴሌብር ቁጥር ገንዘብ ያስተላልፉ:\n🔹 Telebirr: 09xxxxxxxx\n👤 ስም: Yohans Ayele\n\nከፍለው ሲጨርሱ የትራንዛክሽን ሪፈረንስ ቁጥር (Reference No) ወይም የክፍያ ስክሪንሾት ይላኩ።`);
+    ctx.reply(`📱 በቴሌብር ሂሳብ ለመሙላት (Deposit):\n\nእባክዎ ከታች ባለው የቴሌብር ቁጥር ገንዘብ ያስተላልፉ:\n🔹 Telebirr: 09xxxxxxxx\n👤 ስም: Yohans Ayele\n\nከፍለው ሲጨርሱ የትራንዛክሽን ሪፈረንስ ቁጥር (Reference No) ወይም የክፍያ ስክሪንሾት ይላኩ።`);
 });
 
 bot.hears('Withdraw Telebirr 🏦', async (ctx) => {
@@ -206,7 +215,9 @@ bot.hears('Withdraw Telebirr 🏦', async (ctx) => {
 bot.hears('Referral 🎁', async (ctx) => {
     let botInfo = await bot.telegram.getMe();
     let refLink = `https://t.me/${botInfo.username}?start=${ctx.from.id}`;
-    ctx.reply(`🎁 ጓደኛ በመጋበዝ ቋሚ ቦኑስ ያግኙ!\n\nየጋበዣ ሊንክዎ:\n${refLink}`);
+    ctx.reply(`🎁 ጓደኛ በመጋበዝ ቋሚ ቦኑስ ያግኙ!\n\nየጋበዣ ሊንክዎ:\n${refLink}`, {
+        disable_web_page_preview: true
+    });
 });
 
 bot.on('text', async (ctx) => {
@@ -218,7 +229,6 @@ bot.on('text', async (ctx) => {
         user.pendingAction = null;
         await user.save();
         
-        // ለAdmin የቴሌብር ዊዝድሮው ጥያቄ መላክ
         await bot.telegram.sendMessage(ADMIN_CHAT_ID, `🔔 አዲስ የቴሌብር Withdraw ጥያቄ:\n👤 Username: @${ctx.from.username || 'None'}\n🆔 ID: ${telegramId}\n📝 ዝርዝር: ${text}`);
         return ctx.reply(`✅ የቴሌብር ገንዘብ ማውጣት ጥያቄዎ ተቀባይነት አግኝቷል! በአጭር ጊዜ ውስጥ ወደ ቴሌብር ቁጥርዎ ይላካል።`);
     }
