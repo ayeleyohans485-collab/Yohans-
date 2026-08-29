@@ -134,9 +134,11 @@ bot.hears('Contact Support 📞', (ctx) => {
     ctx.reply(`📞 ለድጋፍ @Yohans_Support ያነጋግሩ።`);
 });
 
-// Express route for Telegram Webhook
+// Express route for Telegram Webhook with safety timeout catch
 app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
-bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`);
+bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`).catch(err => {
+    console.log('⚠️ የዌብሁክ ማቀናበር ትንሽ ዘግይቷል:', err.message);
+});
 
 // Bingo Game Logic State
 let gameTimer = 45;
