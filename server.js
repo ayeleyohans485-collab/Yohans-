@@ -168,15 +168,17 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// ሰርቨሩን ማስጀመር
 server.listen(PORT, () => {
     console.log(`🚀 ሰርቨር በፖርት ${PORT} እየሰራ ነው`);
-    
-    // ቦቱን ማስጀመር (ለ Render የተስተካከለ)
-    bot.launch().then(() => {
-        console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል (Bot launched successfully)');
-    }).catch(err => {
-        console.error('❌ የቦት ማስጀመሪያ ስህተት (Bot launch error):', err);
-    });
+});
+
+// ቦቱን ራሱን ችሎ በተናጠል ማስጀመር
+bot.launch().then(() => {
+    console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል');
+}).catch((err) => {
+    console.error('❌ የቦት ማስጀመሪያ ስህተት:', err);
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
