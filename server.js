@@ -157,7 +157,7 @@ bot.start(async (ctx) => {
     ]).resize().oneTime());
 });
 
-// Share Contact Handler
+// Share Contact Handler with removeKeyboard fix
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
@@ -179,11 +179,15 @@ bot.on('contact', async (ctx) => {
             await user.save();
         }
 
-        await ctx.reply(`✅ ምዝገባዎ ተጠናቋል! 10.00 ብር ቦነስ ተሰጥቶዎታል።`, Markup.keyboard([
+        // የድሮውን ኪቦርድ በማጥፋት አዲሶቹን አዝራሮች መላክ
+        await ctx.reply(`✅ ምዝገባዎ ተጠናቋል! 10.00 ብር ቦነስ ተሰጥቶዎታል።`, Markup.removeKeyboard());
+
+        await ctx.reply(`👇 ከታች ካሉት አማራጮች አንዱን ይምረጡ፦`, Markup.keyboard([
             [Markup.button.webApp('🎮 Play Game', webAppUrl)],
             [Markup.button.text('Check Balance 💰'), Markup.button.text('Referral 🎁')],
             [Markup.button.text('Deposit Telebirr 💳'), Markup.button.text('Withdraw Telebirr 🏦')]
         ]).resize());
+
     } catch (e) {
         console.error('Contact error:', e);
         ctx.reply(`⚠️ ስህተት አጋጥሟል፣ እባክዎ እንደገና ይሞክሩ።`);
