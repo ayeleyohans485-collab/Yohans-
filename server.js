@@ -24,11 +24,12 @@ mongoose.connect(MONGO_URI, {
     console.error('❌ የ MongoDB ግንኙነት ተሳክቷል:', err);
 });
 
-// User Schema & Model
+// User Schema & Model with Wallet Support
 const userSchema = new mongoose.Schema({
     telegramId: { type: String, required: true, unique: true },
     username: String,
-    balance: { type: Number, default: 10.00 }
+    balance: { type: Number, default: 10.00 },
+    bankAccount: { type: String, default: '' }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -70,12 +71,23 @@ if (!token) {
 
 const bot = new Telegraf(token);
 
-bot.start((ctx) => {
-    ctx.reply(`🎮 እንኳን ወደ Yohans Bingo በደህና መጡ!`, Markup.keyboard([
-        [Markup.button.webApp('🎮 Play', webAppUrl), Markup.button.text('Register 📝')],
+bot.start(async (ctx) => {
+    try {
+        let telegramId = ctx.from.id.toString();
+        let username = ctx.from.username || 'User';
+        let user = await User.findOne({ telegramId });
+        if (!user) {
+            await User.create({ telegramId, username, balance: 10.00 });
+        }
+    } catch (e) {
+        console.error('Start user creation error:', e);
+    }
+
+    ctx.reply(`🎮 እንኳን ወደ Yohans Bingo በደህና መጡ!\n\nእውነተኛ ገንዘብ በመጫወት ሽልማት ያግኙ።`, Markup.keyboard([
+        [Markup.button.webApp('🎮 Play Game', webAppUrl), Markup.button.text('Register 📝')],
         [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
-        [Markup.button.text('Contact Support 📞'), Markup.button.text('Instruction 📖')],
-        [Markup.button.text('Transfer 💸'), Markup.button.text('Withdraw 🏦')]
+        [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')],
+        [Markup.button.text('Contact Support 📞')]
     ]).resize());
 });
 
@@ -84,33 +96,45 @@ bot.hears('Check Balance 💰', async (ctx) => {
         let telegramId = ctx.from.id.toString();
         let user = await User.findOne({ telegramId });
         let balance = user ? user.balance : 10.00;
-        ctx.reply(`💰 የአሁን ሂሳብዎ (Balance): ${balance.toFixed(2)} ETB`);
+        ctx.reply(`💰 የአሁን እውነተኛ ሂሳብዎ (Balance): ${balance.toFixed(2)} ETB`);
     } catch (e) {
         ctx.reply('❌ ሂሳብዎትን ማየት አልተቻለም።');
     }
 });
 
 bot.hears('Instruction 📖', (ctx) => {
-    ctx.reply(`📖 የመጫወቻ መመሪያ:\n1. 🎮 Play የሚለውን በመጫወት ሚኒ አፕ ይክፈቱ።\n2. 💳 ሒሳብ በመሞላት ካርቴላ ይግዙ።\n3. 🔢 ቁጥሮች ሲመጡ እያስተካከሉ ኑን ይበሉ።`);
+    ctx.reply(`📖 የመጫወቻ መመሪያ:\n1. 🎮 Play Game የሚለውን በመጫወት ሚኒ አፕ ይክፈቱ።\n2. 💳 ሒሳብ በመሞላት ካርቴላ ይግዙ።\n3. 🔢 ቁጥሮች ሲመጡ ኑን በመጫወት ሽልማት ያሸንፉ!`);
 });
 
 bot.hears('Deposit 💳', (ctx) => {
-    ctx.reply(`💳 ሂሳብ ለመሙላት በLattuu SACCO ወይም በባንክ አካውንት ያስተላልፉ።`);
+    ctx.reply(`💳 ሂሳብ ለመሙላት በLattuu SACCO ወይም በባንክ አካውንት ከፍሎ የትራንዛክሽን ሪፈረንስ ይላኩ:\n\n🏦 አካውንት: 1000xxxxxx\n👤 ስም: Yohans Bingo`);
 });
 
 bot.hears('Withdraw 🏦', (ctx) => {
     ctx.reply(`🏦 ከሂሳብዎ ገንዘብ ለማውጣት የባንክ አካውንት ቁጥርዎን ይላኩ።`);
 });
 
-bot.hears('Register 📝', (ctx) => {
-    ctx.reply(`📝 ምዝገባዎ ተሳክቷል!`);
+bot.hears('Register 📝', async (ctx) => {
+    try {
+        let telegramId = ctx.from.id.toString();
+        let username = ctx.from.username || 'User';
+        let user = await User.findOne({ telegramId });
+        if (!user) {
+            await User.create({ telegramId, username, balance: 10.00 });
+            ctx.reply(`📝 ምዝገባዎ ተሳክቷል! 10.00 ETB የቦነስ ቀሪ ተሰጥቶዎታል።`);
+        } else {
+            ctx.reply(`📝 ቀደም ሲል ተመዝግበዋል! የአሁን ሂሳብዎ: ${user.balance.toFixed(2)} ETB ነው።`);
+        }
+    } catch (e) {
+        ctx.reply('❌ ምዝገባ ላይ ችግር ተፈጥሯል።');
+    }
 });
 
 bot.hears('Contact Support 📞', (ctx) => {
     ctx.reply(`📞 ለድጋፍ @Yohans_Support ያነጋግሩ።`);
 });
 
-// Express route for Telegram Webhook (ቦቱ ከቴሌግራም መልዕክት እንዲቀበል የሚያደርግ ዌብሁክ ፕላትፎርም)
+// Express route for Telegram Webhook
 app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
 bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`);
 
@@ -175,5 +199,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-    console.log(`🚀 ሰርቨር እና ዌብሁክ ቦቱ በፖርት ${PORT} በትክክል ተጀምረዋል`);
+    console.log(`🚀 እውነተኛ ሰርቨር እና ዌብሁክ ቦቱ በፖርት ${PORT} በትክክል ተጀምረዋል`);
 });
