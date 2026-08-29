@@ -57,7 +57,7 @@ if (!token) {
 
 const bot = new Telegraf(token);
 
-// /start ሲሉ ስልክ ቁጥር እንዲያጋሩ መጠየቅ (ቪዲዮው ላይ እንዳለው)
+// /start ሲሉ ስልክ ቁጥር እንዲያጋሩ መጠየቅ
 bot.start(async (ctx) => {
     let telegramId = ctx.from.id.toString();
     try {
@@ -78,7 +78,7 @@ bot.start(async (ctx) => {
     ]).resize().oneTime());
 });
 
-// ተጠቃሚው ስልክ ቁጥሩን ሲልክ የሚመዘገብበት እና 10 ብር ቦነስ የሚሰጥበት ክፍል
+// ተጠቃሚው ስልክ ቁጥሩን ሲልክ በትክክል የሚመዘገብበት ክፍል
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
@@ -99,11 +99,15 @@ bot.on('contact', async (ctx) => {
             await user.save();
         }
 
-        ctx.reply(`✅ Registration complete! You've received a 10.00 ETB welcome bonus.`, Markup.keyboard([
-            [Markup.button.webApp('🎮 Play Game', webAppUrl)],
-            [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
-            [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')]
-        ]).resize());
+        // የተስተካከለው የምዝገባ ስኬት መልእክት እና የሜኑ ቁልፎች
+        await ctx.reply(
+            `✅ Registration complete! You've received a 10.00 ETB welcome bonus.\n\n🎮 PLAY IN:\nChoose a room to join the game:`,
+            Markup.keyboard([
+                [Markup.button.webApp('🎮 Play Game', webAppUrl)],
+                [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
+                [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')]
+            ]).resize()
+        );
 
     } catch (e) {
         console.error('Contact registration error:', e);
@@ -134,7 +138,7 @@ bot.hears('Withdraw 🏦', (ctx) => {
     ctx.reply(`🏦 ከሂሳብዎ ገንዘብ ለማውጣት የባንክ አካውንት ቁጥርዎን ይላኩ።`);
 });
 
-// Express route for Telegram Webhook with safety timeout catch
+// Express route for Telegram Webhook
 app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
 bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`).catch(err => {
     console.log('⚠️ የዌብሁክ ማቀናበር ትንሽ ዘግይቷል:', err.message);
