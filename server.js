@@ -24,13 +24,14 @@ mongoose.connect(MONGO_URI, {
     console.error('❌ የ MongoDB ግንኙነት ተሳክቷል:', err);
 });
 
-// User Schema with Flexible Phone Number Support
+// User Schema with State Support
 const userSchema = new mongoose.Schema({
     telegramId: { type: String, required: true, unique: true },
     username: { type: String, default: '' },
     phoneNumber: { type: String, default: '' },
     balance: { type: Number, default: 10.00 },
-    bankAccount: { type: String, default: '' }
+    bankAccount: { type: String, default: '' },
+    pendingAction: { type: String, default: null } // 'withdraw' ወይም 'deposit' ለመለየት
 });
 const User = mongoose.model('User', userSchema);
 
@@ -50,6 +51,7 @@ app.get('/api/user/:telegramId', async (req, res) => {
 // Telegram Bot Setup via Webhook for Render
 const token = process.env.BOT_TOKEN;
 const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
+const ADMIN_CHAT_ID = '7833077977'; // በቀጥታ ጥያቄዎቹ ወደዚህ የአድሚን ID ይላካሉ
 
 if (!token) {
     console.error('❌ BOT_TOKEN በ Environment Variables ውስጥ አልተገኘም!');
@@ -57,7 +59,7 @@ if (!token) {
 
 const bot = new Telegraf(token);
 
-// /start ሲሉ ተጠቃሚውን በመረጃ ቋት ውስጥ ማየት እና ስልክ ቁጥር መጠየቅ
+// /start ሲሉ ተጠቃሚውን በመረጃ ቋት ውስጥ መመዝገብ
 bot.start(async (ctx) => {
     let telegramId = ctx.from.id.toString();
     let username = ctx.from.username || 'User';
@@ -76,12 +78,12 @@ bot.start(async (ctx) => {
         console.error('Start error:', e);
     }
 
-    ctx.reply(`👋 Welcome to Yohans Bingo! To register and get your bonus, please share your phone number using the button below.`, Markup.keyboard([
+    ctx.reply(`👋 Welcome to Yohans Bingo! To register and get your 10.00 ETB bonus, please share your phone number using the button below.`, Markup.keyboard([
         [Markup.button.contactRequest('📱 Share Contact')]
     ]).resize().oneTime());
 });
 
-// ስልክ ቁጥር ሲጋራ የሚፈጸም አስተማማኝ ምዝገባ (Error እንዳይፈጠር የተስተካከለ)
+// ስልክ ቁጥር ሲጋራ
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
@@ -99,6 +101,7 @@ bot.on('contact', async (ctx) => {
         } else {
             user.phoneNumber = phoneNumber;
             if (user.balance < 10) user.balance = 10.00;
+            user.pendingAction = null;
             await user.save();
         }
 
@@ -113,7 +116,6 @@ bot.on('contact', async (ctx) => {
 
     } catch (e) {
         console.error('Contact registration error:', e);
-        // ኤርሮር እንዳይወጣ እና ተጠቃሚው ወደ ሜኑ እንዲገባ ማድረግ
         await ctx.reply(
             `✅ Registration successful! Welcome to Yohans Bingo.`,
             Markup.keyboard([
@@ -140,12 +142,61 @@ bot.hears('Instruction 📖', (ctx) => {
     ctx.reply(`📖 የመጫወቻ መመሪያ:\n1. 🎮 Play Game የሚለውን በመጫወት ሚኒ አፕ ይክፈቱ።\n2. 💳 ሒሳብ በመሞላት ካርቴላ ይግዙ።\n3. 🔢 ቁጥሮች ሲመጡ ኑን በመጫወት ሽልማት ያሸንፉ!`);
 });
 
-bot.hears('Deposit 💳', (ctx) => {
-    ctx.reply(`💳 ሂሳብ ለመሙላት በባንክ አካውንት ከፍሎ የትራንዛክሽን ሪፈረንስ ይላኩ:\n\n🏦 አካውንት: 1000xxxxxx\n👤 ስም: Yohans Bingo`);
+// 💳 Deposit (ሂሳብ ለመሙላት ሲጠየቅ)
+bot.hears('Deposit 💳', async (ctx) => {
+    try {
+        let telegramId = ctx.from.id.toString();
+        await User.updateOne({ telegramId }, { pendingAction: 'deposit' });
+    } catch (e) {
+        console.error(e);
+    }
+    ctx.reply(`💳 ሂሳብ ለመሙላት ከታች ባለው የባንክ አካውንት ከፍሎ የትራንዛክሽን ሪፈረንስ ቁጥር (Reference No) ወይም የደረሰኝ ፎቶ ይላኩ:\n\n🏦 አካውንት: 1000xxxxxx\n👤 ስም: Yohans Bingo`);
 });
 
-bot.hears('Withdraw 🏦', (ctx) => {
-    ctx.reply(`🏦 ከሂሳብዎ ገንዘብ ለማውጣት የባንክ አካውንት ቁጥርዎን ይላኩ።`);
+// 🏦 Withdraw (ገንዘብ ለማውጣት ሲጠየቅ)
+bot.hears('Withdraw 🏦', async (ctx) => {
+    try {
+        let telegramId = ctx.from.id.toString();
+        await User.updateOne({ telegramId }, { pendingAction: 'withdraw' });
+    } catch (e) {
+        console.error(e);
+    }
+    ctx.reply(`🏦 ከሂሳብዎ ገንዘብ ለማውጣት የሚፈልጉትን መጠን እና የባንክ ወይም የቴሌብር አካውንት ቁጥርዎን ይጻፉ (ለምሳሌ: 300 ብር እና 09xxxxxxxx):`);
+});
+
+// ተጠቃሚው የሚልከውን ጽሁፍ (ማውጫ ወይም መሙያ ጥያቄ) መቀበል እና ለአድሚን ማስተላለፍ
+bot.on('text', async (ctx) => {
+    let text = ctx.message.text;
+    if (text.startsWith('/')) return; // ትዕዛዝ ከሆነ ዝለለው
+
+    let telegramId = ctx.from.id.toString();
+    let username = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+
+    try {
+        let user = await User.findOne({ telegramId });
+        if (!user || !user.pendingAction) return;
+
+        if (user.pendingAction === 'withdraw') {
+            ctx.reply(`✅ የገንዘብ ማውጣት ጥያቄዎ በትክክል ተቀባይነት አግኝቷል! በአጭር ጊዜ ውስጥ ወደ አካውንትዎ ይላካል።`);
+            
+            // ጥያቄውን በቀጥታ ወደ አድሚን መላክ
+            bot.telegram.sendMessage(ADMIN_CHAT_ID, `🔔 **አዲስ የገንዘብ ማውጣት ጥያቄ!**\n\n👤 ተጠቃሚ: ${username}\n🆔 ID: ${telegramId}\n📱 ስልክ: ${user.phoneNumber || 'አልታወቀም'}\n💬 ዝርዝር ጥያቄ: ${text}`);
+
+            user.pendingAction = null;
+            await user.save();
+
+        } else if (user.pendingAction === 'deposit') {
+            ctx.reply(`✅ የዲፖዚት ማረጋገጫዎ ደርሶናል! በአጭር ጊዜ ውስጥ ተረጋግጦ ሂሳብዎ ይስተካከላል።`);
+            
+            // የዲፖዚት ማረጋገጫውን በቀጥታ ወደ አድሚን መላክ
+            bot.telegram.sendMessage(ADMIN_CHAT_ID, `💳 **አዲስ የዲፖዚት ሪፈረንስ መረጃ!**\n\n👤 ተጠቃሚ: ${username}\n🆔 ID: ${telegramId}\n📱 ስልክ: ${user.phoneNumber || 'አልታወቀም'}\n💬 ሪፈረንስ/መልእክት: ${text}`);
+
+            user.pendingAction = null;
+            await user.save();
+        }
+    } catch (e) {
+        console.error('Text handler error:', e);
+    }
 });
 
 // Express route for Telegram Webhook
