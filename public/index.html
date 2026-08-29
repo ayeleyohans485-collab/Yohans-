@@ -3,546 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yohans Bingo Pro</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Yohans Bingo</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0f172a;
+            background: linear-gradient(135deg, #13111c, #2b1b42, #110c1d);
             color: #ffffff;
-            text-align: center;
-            padding: 6px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding-bottom: 75px;
-        }
-        .wallet-box {
-            background: #064e3b;
-            padding: 6px;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: bold;
-            color: #34d399;
-            border: 1px solid #047857;
-            max-width: 340px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .timer-box {
-            background: #b45309;
-            color: white;
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 6px;
-            max-width: 340px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .auto-mark-box {
-            background: #1e293b;
-            padding: 6px 12px;
-            border-radius: 8px;
-            margin-bottom: 6px;
-            font-size: 12px;
-            display: inline-block;
-            border: 1px solid #334155;
-        }
-        .selectors-wrapper {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 6px;
-            flex-wrap: wrap;
-        }
-        .card-selector {
-            font-size: 12px;
-        }
-        .card-selector select {
-            padding: 4px 8px;
-            background: #1e293b;
-            color: white;
-            border: 1px solid #475569;
-            border-radius: 6px;
-            font-size: 12px;
-        }
-        .master-board {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 3px;
-            max-width: 340px;
-            margin: 0 auto 6px auto;
-            background: #1e293b;
-            padding: 6px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-        }
-        .master-col {
+            padding: 0;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            align-items: center;
+            min-height: 100vh;
         }
-        .master-header {
-            background: #0ea5e9;
-            color: #000;
-            font-weight: bold;
-            font-size: 14px;
-            padding: 5px 0;
-            border-radius: 4px;
-        }
-        .master-cell {
-            background: #1e293b;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: bold;
-            padding: 5px 0;
-            border-radius: 3px;
-        }
-        .master-cell.called {
-            background: #f59e0b;
-            color: #000;
-        }
-        .number-board {
-            font-size: 14px;
-            font-weight: bold;
-            color: #facc15;
-            background: #1e293b;
-            padding: 6px;
-            border-radius: 8px;
-            margin-bottom: 6px;
-            border: 1px solid #334155;
-            max-width: 340px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .cards-container {
+        .header-bar {
+            width: 100%;
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 8px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
         }
-        .card-wrapper {
-            background: #1e293b;
-            padding: 6px;
-            border-radius: 8px;
-            border: 1px solid #475569;
+        .wallet-container {
+            display: flex;
+            justify-content: space-around;
+            width: 92%;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            border-radius: 12px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .card-title {
-            font-size: 12px;
-            color: #38bdf8;
-            margin-bottom: 4px;
+        .wallet-box {
+            text-align: center;
+            font-size: 13px;
+        }
+        .wallet-box span {
+            display: block;
+            font-size: 15px;
             font-weight: bold;
+            color: #ffcc00;
+            margin-top: 3px;
+        }
+        .timer-box {
+            background: #ff4500;
+            padding: 6px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .game-status {
+            font-size: 14px;
+            background: rgba(255, 165, 0, 0.2);
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin: 5px 0;
+            border: 1px solid rgba(255, 165, 0, 0.4);
+        }
+        /* የካርቴላ መምረጫው ሙሉ በሙሉ እንዲደበቅ ተደርጓል */
+        .card-selector-wrapper {
+            display: none !important;
+        }
+        .bingo-card {
+            background: rgba(20, 15, 35, 0.85);
+            border-radius: 12px;
+            padding: 12px;
+            width: 92%;
+            max-width: 400px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .bingo-header {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            text-align: center;
+            font-weight: bold;
+            background: #00d2ff;
+            color: #000;
+            padding: 8px 0;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 18px;
         }
         .bingo-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 3px;
-            width: 150px;
+            gap: 5px;
         }
-        .cell {
-            background: #334155;
-            border: 1px solid #475569;
+        .bingo-cell {
+            background: #2a2242;
             aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            border-radius: 6px;
             font-weight: bold;
-            border-radius: 4px;
+            font-size: 15px;
+            color: #fff;
             cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .cell.marked {
-            background: #0284c7;
-            color: white;
-            border-color: #38bdf8;
-        }
-        .cell.star {
-            background: #f59e0b;
+        .bingo-cell.marked {
+            background: #ff9900;
             color: #000;
         }
-        .btn-container {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .btn {
-            padding: 8px 20px;
-            font-size: 13px;
+        .called-display {
+            font-size: 16px;
+            margin: 8px 0;
             font-weight: bold;
+            color: #00ffcc;
+        }
+        .action-btn {
+            background: #00c853;
+            color: white;
             border: none;
-            border-radius: 6px;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
             cursor: pointer;
+            margin-top: 10px;
         }
-        .btn-leave { background: #ef4444; color: white; }
-        .btn-bingo { background: #22c55e; color: white; }
-        .nav-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            border-top: 2px solid #334155;
-            z-index: 1000;
+        .action-btn:active {
+            transform: scale(0.95);
         }
-        .nav-item {
-            font-size: 11px;
-            text-align: center;
-            color: #94a3b8;
-            cursor: pointer;
-        }
-        .nav-item.active { color: #38bdf8; }
-        .nav-icon { font-size: 16px; display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
-    <div class="wallet-box" id="wallet-display">
-        🏆 የድርሻዎ: 10.00 ETB
+    <div class="header-bar">
+        <span><b>Yohans Bingo</b></span>
+        <div class="timer-box" id="timerDisplay">45 s</div>
     </div>
 
-    <div class="timer-box" id="timer-display">
-        ⏳ ጨዋታው ሊጀመር ነው... (45 ሰ)
+    <!-- የኪስ ቦርሳ (Wallet) ማሳያ -->
+    <div class="wallet-container">
+        <div class="wallet-box">Main Wallet <span id="mainWallet">10.00</span></div>
+        <div class="wallet-box">Play Wallet <span id="playWallet">0.00</span></div>
+        <div class="wallet-box">Stake <span id="stakeDisplay">10</span></div>
     </div>
 
-    <div class="auto-mark-box">
-        <label>
-            <input type="checkbox" id="auto-mark-toggle" checked onchange="toggleAutoMark()"> 🤖 አውቶማቲክ ማርክ (Auto-Mark)
-        </label>
-    </div>
+    <div class="game-status" id="statusText">🚀 ጨዋታው እየተካሄደ ነው!</div>
+    
+    <div class="called-display">🎲 የሚወጣው ቁጥር: <span id="currentNumber">-</span></div>
 
-    <div class="selectors-wrapper">
-        <div class="card-selector">
-            <label for="card-select-1"><b>ካርቴላ 1:</b></label>
-            <select id="card-select-1" onchange="changeCard(1)"></select>
+    <!-- የቢንጎ ካርቴላ -->
+    <div class="bingo-card">
+        <div class="bingo-header">
+            <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
         </div>
-        <div class="card-selector">
-            <label for="card-select-2"><b>ካርቴላ 2:</b></label>
-            <select id="card-select-2" onchange="changeCard(2)"></select>
+        <div class="bingo-grid" id="bingoGrid">
+            <!-- ጃቫስክሪፕት በራስ-ሰር ሰንጠረዡን ይሞላዋል -->
         </div>
     </div>
 
-    <div class="master-board" id="master-board"></div>
-
-    <div class="number-board" id="called-display">
-        🎲 የሚወጣው ቁጥር: ጨዋታው እስኪጀምር በመጠባበቅ ላይ...
-    </div>
-
-    <div class="cards-container" id="cards-container"></div>
-
-    <div class="btn-container">
-        <button class="btn btn-leave" onclick="leaveGame()">Leave</button>
-        <button class="btn btn-bingo" onclick="checkBingo()">BINGO!</button>
-    </div>
-
-    <div class="nav-bar">
-        <div class="nav-item active"><span class="nav-icon">🎮</span>Game</div>
-        <div class="nav-item"><span class="nav-icon">📊</span>Scores</div>
-        <div class="nav-item"><span class="nav-icon">📜</span>History</div>
-        <div class="nav-item" onclick="addInviteBonus()"><span class="nav-icon">💰</span>Invite</div>
-        <div class="nav-item"><span class="nav-icon">👤</span>Profile</div>
-    </div>
+    <button class="action-btn" onclick="checkBingo()">BINGO!</button>
 
     <script>
         const socket = io();
-        let tg = window.Telegram.WebApp;
-        tg.expand();
 
-        let telegramId = tg.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id.toString() : "test_user_123";
-        let userBalance = 10.00;
+        // ዩዘር ቴሌግራም አይዲ (በቴሌግራም ዌብአፕ ጊዜ ራስ-ሰር እንዲያነብ)
+        let telegramId = "123456789"; 
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
+            telegramId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+        }
 
-        async function fetchUserBalance() {
-            try {
-                let res = await fetch(`/api/user/${telegramId}`);
-                let data = await res.json();
-                if (data.success) {
-                    userBalance = data.balance;
-                    updateWalletDisplay();
+        // የተጠቃሚውን ቀሪ ሂሳብ ከሰርቨር ማምጣት
+        fetch(`/api/user/${telegramId}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('mainWallet').innerText = data.balance.toFixed(2);
                 }
-            } catch (e) {
-                console.error("Balance fetch error:", e);
-            }
-        }
-        fetchUserBalance();
-
-        function updateWalletDisplay() {
-            document.getElementById('wallet-display').innerText = `🏆 የድርሻዎ: ${userBalance.toFixed(2)} ETB`;
-        }
-
-        async function addInviteBonus() {
-            try {
-                let res = await fetch('/api/deposit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId, amount: 10.00, txRef: 'INVITE_BONUS' })
-                });
-                let data = await res.json();
-                if (data.success) {
-                    userBalance = data.newBalance;
-                    updateWalletDisplay();
-                    alert('✅ ጓደኛ በመጋበዝዎ 10 ETB ቦነስ አግኝተዋል!');
-                }
-            } catch (e) {
-                alert('ቦነስ መመዝገብ አልተቻለም');
-            }
-        }
-
-        function playSound(type) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                if (type === 'mark') {
-                    osc.frequency.setValueAtTime(600, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    osc.start(); osc.stop(ctx.currentTime + 0.08);
-                } else if (type === 'call') {
-                    osc.frequency.setValueAtTime(400, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                    osc.start(); osc.stop(ctx.currentTime + 0.12);
-                } else if (type === 'bingo') {
-                    osc.frequency.setValueAtTime(800, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.3);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    osc.start(); osc.stop(ctx.currentTime + 0.4);
-                }
-            } catch (e) {}
-        }
-
-        const select1 = document.getElementById('card-select-1');
-        const select2 = document.getElementById('card-select-2');
-
-        let defaultOpt1 = document.createElement('option');
-        defaultOpt1.value = ""; defaultOpt1.innerText = "ካርቴላ ይምረጡ";
-        select1.appendChild(defaultOpt1);
-
-        let defaultOpt2 = document.createElement('option');
-        defaultOpt2.value = ""; defaultOpt2.innerText = "ካርቴላ ይምረጡ";
-        select2.appendChild(defaultOpt2);
-
-        for (let i = 1; i <= 200; i++) {
-            let opt1 = document.createElement('option');
-            opt1.value = i; opt1.innerText = `ካርቴላ #${i}`;
-            select1.appendChild(opt1);
-
-            let opt2 = document.createElement('option');
-            opt2.value = i; opt2.innerText = `ካርቴላ #${i}`;
-            select2.appendChild(opt2);
-        }
-
-        let savedCard1 = localStorage.getItem('yohans_selected_card_1') || "";
-        let savedCard2 = localStorage.getItem('yohans_selected_card_2') || "";
-        select1.value = savedCard1;
-        select2.value = savedCard2;
-
-        let autoMark = localStorage.getItem('yohans_automark') === 'true';
-        document.getElementById('auto-mark-toggle').checked = autoMark;
-
-        function toggleAutoMark() {
-            autoMark = document.getElementById('auto-mark-toggle').checked;
-            localStorage.setItem('yohans_automark', autoMark);
-        }
-
-        const bingoCols = {
-            'B': Array.from({length: 15}, (_, i) => i + 1),
-            'I': Array.from({length: 15}, (_, i) => i + 16),
-            'N': Array.from({length: 15}, (_, i) => i + 31),
-            'G': Array.from({length: 15}, (_, i) => i + 46),
-            'O': Array.from({length: 15}, (_, i) => i + 61)
-        };
-
-        function renderMasterBoard(calledList) {
-            const masterBoard = document.getElementById('master-board');
-            masterBoard.innerHTML = '';
-            for (let [letter, nums] of Object.entries(bingoCols)) {
-                let colDiv = document.createElement('div');
-                colDiv.className = 'master-col';
-                let headerDiv = document.createElement('div');
-                headerDiv.className = 'master-header';
-                headerDiv.innerText = letter;
-                colDiv.appendChild(headerDiv);
-
-                nums.forEach(num => {
-                    let cellDiv = document.createElement('div');
-                    cellDiv.className = 'master-cell';
-                    cellDiv.innerText = num;
-                    if (calledList.includes(num)) {
-                        cellDiv.classList.add('called');
-                    }
-                    colDiv.appendChild(cellDiv);
-                });
-                masterBoard.appendChild(colDiv);
-            }
-        }
-
-        renderMasterBoard([]);
-
-        function getCardNumbers(seed) {
-            let cols = [
-                Array.from({length: 15}, (_, i) => i + 1),
-                Array.from({length: 15}, (_, i) => i + 16),
-                Array.from({length: 15}, (_, i) => i + 31),
-                Array.from({length: 15}, (_, i) => i + 46),
-                Array.from({length: 15}, (_, i) => i + 61)
-            ];
-            
-            let cardCols = [];
-            let randomSeed = parseInt(seed) * 997;
-
-            for (let c = 0; c < 5; c++) {
-                let shuffled = [...cols[c]];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    randomSeed = (randomSeed * 9301 + 49297) % 233280;
-                    let j = Math.floor((randomSeed / 233280) * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                cardCols.push(shuffled.slice(0, 5));
-            }
-
-            let cardGrid = [];
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 5; c++) {
-                    if (r === 2 && c === 2) {
-                        cardGrid.push('⭐');
-                    } else {
-                        cardGrid.push(cardCols[c][r > 2 ? r - 1 : r]);
-                    }
-                }
-            }
-            return cardGrid;
-        }
-
-        function renderUserCards() {
-            const container = document.getElementById('cards-container');
-            container.innerHTML = '';
-
-            [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
-                let wrapper = document.createElement('div');
-                wrapper.className = 'card-wrapper';
-
-                let title = document.createElement('div');
-                title.className = 'card-title';
-                title.innerText = item.cardNum ? `ካርቴላ #${item.cardNum}` : `ካርቴላ አልተመረጠም`;
-                wrapper.appendChild(title);
-
-                let grid = document.createElement('div');
-                grid.className = 'bingo-grid';
-
-                if (!item.cardNum || item.cardNum === "") {
-                    for (let i = 0; i < 25; i++) {
-                        let cell = document.createElement('div');
-                        cell.className = 'cell';
-                        grid.appendChild(cell);
-                    }
-                } else {
-                    let cardItems = getCardNumbers(item.cardNum);
-                    let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
-
-                    for (let i = 0; i < 25; i++) {
-                        let cell = document.createElement('div');
-                        cell.className = 'cell';
-                        let val = cardItems[i];
-
-                        if (i === 12) {
-                            cell.innerText = '⭐';
-                            cell.classList.add('star', 'marked');
-                        } else {
-                            cell.innerText = val;
-                            if (savedMarks[val]) {
-                                cell.classList.add('marked');
-                            }
-                            
-                            cell.onclick = function() {
-                                this.classList.toggle('marked');
-                                playSound('mark');
-                                savedMarks[val] = this.classList.contains('marked');
-                                localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
-                            };
-                        }
-                        grid.appendChild(cell);
-                    }
-                }
-                wrapper.appendChild(grid);
-                container.appendChild(wrapper);
             });
-        }
 
-        function changeCard(cardIndex) {
-            if (cardIndex === 1) {
-                savedCard1 = select1.value;
-                localStorage.setItem('yohans_selected_card_1', savedCard1);
-            } else {
-                savedCard2 = select2.value;
-                localStorage.setItem('yohans_selected_card_2', savedCard2);
-            }
-            renderUserCards();
-        }
+        // የቢንጎ ሰንጠረዥ ማዋቀር (Mock Sample Card)
+        const gridEl = document.getElementById('bingoGrid');
+        const cardNumbers = [
+            9, 29, 42, 51, 73,
+            5, 25, 40, 49, 72,
+            15, 24, 33, 46, 63,
+            12, 18, 39, 48, 68,
+            3, 17, 31, 45, 61
+        ];
 
-        // Socket.io Events
+        cardNumbersforEachSafe = () => {
+            gridEl.innerHTML = '';
+            cardNumbers.forEach((num, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                cell.innerText = num;
+                cell.onclick = () => {
+                    cell.classList.toggle('marked');
+                };
+                gridEl.appendChild(cell);
+            });
+        };
+        cardNumbersforEachSafe();
+
+        // ሶኬት ክስተቶች (Socket Events)
         socket.on('init_state', (data) => {
-            if (data.gameActive) {
-                document.getElementById('timer-display').innerText = '🚀 ጨዋታው እየተካሄደ ነው!';
-            } else {
-                document.getElementById('timer-display').innerText = `⏳ ጨዋታው ሊጀመር ነው... (${data.gameTimer} ሰ)`;
-            }
-            renderMasterBoard(data.calledNumbers);
-            if (data.calledNumbers.length > 0) {
-                document.getElementById('called-display').innerText = `🎲 የሚወጣው ቁጥር: ${data.calledNumbers[data.calledNumbers.length - 1]}`;
+            if(data.gameActive) {
+                document.getElementById('statusText').innerText = "🚀 ጨዋታው በሂደት ላይ ነው!";
             }
         });
 
         socket.on('timer_update', (data) => {
-            if (data.gameActive) {
-                document.getElementById('timer-display').innerText = '🚀 ጨዋታው ጀምሯል!';
+            document.getElementById('timerDisplay').innerText = data.timer + " s";
+            if(data.gameActive) {
+                document.getElementById('statusText').innerText = "🚀 ቁጥሮች በመውጣት ላይ ናቸው!";
             } else {
-                document.getElementById('timer-display').innerText = `⏳ ጨዋታው ሊጀመር ነው... (${data.timer} ሰ)`;
+                document.getElementById('statusText').innerText = `⏳ የሚቀጥለው ጨዋታ በ ${data.timer} ሰከንድ ይጀምራል`;
             }
         });
 
         socket.on('number_called', (data) => {
-            document.getElementById('called-display').innerText = `🎲 የሚወጣው ቁጥር: ${data.currentNumber}`;
-            playSound('call');
-            renderMasterBoard(data.calledNumbers);
-
-            if (autoMark) {
-                [ {cardNum: savedCard1, index: 1}, {cardNum: savedCard2, index: 2} ].forEach(item => {
-                    if (item.cardNum) {
-                        let cardItems = getCardNumbers(item.cardNum);
-                        if (cardItems.includes(data.currentNumber)) {
-                            let savedMarks = JSON.parse(localStorage.getItem(`yohans_marks_${item.index}_${item.cardNum}`)) || {};
-                            savedMarks[data.currentNumber] = true;
-                            localStorage.setItem(`yohans_marks_${item.index}_${item.cardNum}`, JSON.stringify(savedMarks));
-                        }
-                    }
-                });
-                renderUserCards();
-            }
+            document.getElementById('currentNumber').innerText = data.currentNumber;
+            
+            // Auto-mark logic matching called numbers
+            const cells = document.querySelectorAll('.bingo-cell');
+            cells.forEach(cell => {
+                if (parseInt(cell.innerText) === data.currentNumber) {
+                    cell.classList.add('marked');
+                }
+            });
         });
 
         socket.on('game_reset', (data) => {
-            alert('🔄 አዲስ ጨዋታ ሊጀመር ነው!');
-            window.location.reload();
+            document.getElementById('currentNumber').innerText = "-";
+            const cells = document.querySelectorAll('.bingo-cell');
+            cells.forEach(cell => cell.classList.remove('marked'));
         });
 
         function checkBingo() {
-            playSound('bingo');
-            alert('🎉 እንኳን ደስ አለዎት! ቢንጎዎ ተረጋግጧል!');
+            alert("🎉 ኑን (BINGO) ጥያቄዎ ተልኳል!");
         }
-
-        function leaveGame() {
-            localStorage.clear();
-            window.location.reload();
-        }
-
-        renderUserCards();
     </script>
 </body>
 </html>
