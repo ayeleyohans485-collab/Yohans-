@@ -13,11 +13,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Disable Mongoose buffering to prevent timeout hangs
+mongoose.set('bufferCommands', false);
+
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/yohans_bingo';
 mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 15000
 }).then(() => {
     console.log('✅ ከ MongoDB ጋር ተገናኝቷል');
 }).catch(err => {
@@ -57,7 +61,7 @@ resetGame();
 // API Routes
 app.get('/api/user/:telegramId', async (req, res) => {
     try {
-        let user = await User.findOne({ telegramId: req.params.telegramId });
+        let user = await User.findOne({ telegramId: req.params.telegramId }).maxTimeMS(10000);
         if (!user) {
             return res.json({ success: true, balance: 10.00, playWallet: 0.00 });
         }
@@ -94,7 +98,7 @@ setInterval(() => {
                 startCaller();
             }
         } else {
-            gameTimer = 45; // ተጫዋች ከሌለ ሰዓቱ 45 ሆኖ ይጠብቃል
+            gameTimer = 45; 
         }
 
         io.emit('timer_update', { 
@@ -141,7 +145,7 @@ bot.start(async (ctx) => {
     let startPayload = ctx.payload; 
 
     try {
-        let user = await User.findOne({ telegramId });
+        let user = await User.findOne({ telegramId }).maxTimeMS(10000);
         if (!user) {
             let referrerId = (startPayload && startPayload !== telegramId) ? startPayload : null;
             await User.create({
@@ -157,27 +161,23 @@ bot.start(async (ctx) => {
     ]).resize().oneTime());
 });
 
-// Share Contact Handler with error details
+// Share Contact Handler - Fixed with robust findOneAndUpdate
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
         let username = ctx.from.username || 'User';
         let phoneNumber = ctx.message.contact ? ctx.message.contact.phone_number : 'Unknown';
 
-        let user = await User.findOne({ telegramId });
-        if (!user) {
-            await User.create({ 
-                telegramId, 
-                username, 
-                phoneNumber, 
-                balance: 10.00, 
-                playWallet: 0.00 
-            });
-        } else {
-            user.phoneNumber = phoneNumber;
-            if (user.balance < 10) user.balance = 10.00;
-            await user.save();
-        }
+        // findOneAndUpdate በመጠቀም ዳታውን በአንድ ጊዜ በመፈለግ ወይም አዲስ በመፍጠር ዱለትን እና ታይምአውትን እናስቀራለን
+        let user = await User.findOneAndUpdate(
+            { telegramId },
+            { 
+                $set: { username, phoneNumber },
+                $setOnInsert: { playWallet: 0.00, referredBy: null, referralCount: 0 },
+                $inc: { balance: 10.00 } // ቦነሱን ጨምሮ ያስቀምጣል
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         // ኪቦርዱን በማጥፋት መልእክት መላክ
         await ctx.telegram.sendMessage(ctx.chat.id, `✅ ምዝገባዎ ተጠናቋል! 10.00 ብር ቦነስ ተሰጥቶዎታል።`, {
@@ -193,16 +193,20 @@ bot.on('contact', async (ctx) => {
 
     } catch (e) {
         console.error('Contact error detail:', e);
-        ctx.reply(`⚠️ ስህተት አጋጥሟል: ${e.message}`);
+        ctx.reply(`⚠️ ስህተት አጋጥሟል, እባክዎ እንደገና /start ይበሉ።`);
     }
 });
 
 // Menu Handlers
 bot.hears('Check Balance 💰', async (ctx) => {
-    let user = await User.findOne({ telegramId: ctx.from.id.toString() });
-    let bal = user ? user.balance : 0.00;
-    let playBal = user ? user.playWallet : 0.00;
-    ctx.reply(`💰 የሂሳብዎ ሁኔታ:\n- Main Wallet: ${bal.toFixed(2)} ETB\n- Play Wallet: ${playBal.toFixed(2)} ETB`);
+    try {
+        let user = await User.findOne({ telegramId: ctx.from.id.toString() }).maxTimeMS(10000);
+        let bal = user ? user.balance : 0.00;
+        let playBal = user ? user.playWallet : 0.00;
+        ctx.reply(`💰 የሂሳብዎ ሁኔታ:\n- Main Wallet: ${bal.toFixed(2)} ETB\n- Play Wallet: ${playBal.toFixed(2)} ETB`);
+    } catch (e) {
+        ctx.reply(`⚠️ የሂሳብ መረጃ ማምጣት አልተቻለም።`);
+    }
 });
 
 bot.hears('Deposit Telebirr 💳', async (ctx) => {
@@ -210,13 +214,17 @@ bot.hears('Deposit Telebirr 💳', async (ctx) => {
 });
 
 bot.hears('Withdraw Telebirr 🏦', async (ctx) => {
-    let user = await User.findOne({ telegramId: ctx.from.id.toString() });
-    if (!user || user.balance <= 0) {
-        return ctx.reply(`⚠️ ማውጣት የሚችሉት በቂ ሂሳብ የለዎትም!`);
+    try {
+        let user = await User.findOne({ telegramId: ctx.from.id.toString() }).maxTimeMS(10000);
+        if (!user || user.balance <= 0) {
+            return ctx.reply(`⚠️ ማውጣት የሚችሉት በቂ ሂሳብ የለዎትም!`);
+        }
+        ctx.reply(`🏦 በቴሌብር ገንዘብ ለማውጣት (Withdraw):\n\nእባክዎ የሚወጣውን መጠን እና የቴሌብር ቁጥርዎን በዚህ መልኩ ይጻፉ (ለምሳሌ: 50 09xxxxxxxx):`);
+        user.pendingAction = 'waiting_for_telebirr_withdraw';
+        await user.save();
+    } catch (e) {
+        ctx.reply(`⚠️ ስህተት አጋጥሟል እባክዎ እንደገና ይሞክሩ።`);
     }
-    ctx.reply(`🏦 በቴሌብር ገንዘብ ለማውጣት (Withdraw):\n\nእባክዎ የሚወጣውን መጠን እና የቴሌብር ቁጥርዎን በዚህ መልኩ ይጻፉ (ለምሳሌ: 50 09xxxxxxxx):`);
-    user.pendingAction = 'waiting_for_telebirr_withdraw';
-    await user.save();
 });
 
 bot.hears('Referral 🎁', async (ctx) => {
@@ -230,14 +238,18 @@ bot.hears('Referral 🎁', async (ctx) => {
 bot.on('text', async (ctx) => {
     let text = ctx.message.text;
     let telegramId = ctx.from.id.toString();
-    let user = await User.findOne({ telegramId });
+    try {
+        let user = await User.findOne({ telegramId }).maxTimeMS(10000);
 
-    if (user && user.pendingAction === 'waiting_for_telebirr_withdraw') {
-        user.pendingAction = null;
-        await user.save();
-        
-        await bot.telegram.sendMessage(ADMIN_CHAT_ID, `🔔 አዲስ የቴሌብር Withdraw ጥያቄ:\n👤 Username: @${ctx.from.username || 'None'}\n🆔 ID: ${telegramId}\n📝 ዝርዝር: ${text}`);
-        return ctx.reply(`✅ የቴሌብር ገንዘብ ማውጣት ጥያቄዎ ተቀባይነት አግኝቷል! በአጭር ጊዜ ውስጥ ወደ ቴሌብር ቁጥርዎ ይላካል።`);
+        if (user && user.pendingAction === 'waiting_for_telebirr_withdraw') {
+            user.pendingAction = null;
+            await user.save();
+            
+            await bot.telegram.sendMessage(ADMIN_CHAT_ID, `🔔 አዲስ የቴሌብር Withdraw ጥያቄ:\n👤 Username: @${ctx.from.username || 'None'}\n🆔 ID: ${telegramId}\n📝 ዝርዝር: ${text}`);
+            return ctx.reply(`✅ የቴሌብር ገንዘብ ማውጣት ጥያቄዎ ተቀባይነት አግኝቷል! በአጭር ጊዜ ውስጥ ወደ ቴሌብር ቁጥርዎ ይላካል።`);
+        }
+    } catch (e) {
+        console.error('Text handler error:', e);
     }
 });
 
