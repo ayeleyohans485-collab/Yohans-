@@ -119,6 +119,7 @@ bot.hears('Register 📝', async (ctx) => {
         let telegramId = ctx.from.id.toString();
         let username = ctx.from.username || 'User';
         let user = await User.findOne({ telegramId });
+        
         if (!user) {
             await User.create({ telegramId, username, balance: 10.00 });
             ctx.reply(`📝 ምዝገባዎ ተሳክቷል! 10.00 ETB የቦነስ ቀሪ ተሰጥቶዎታል።`);
@@ -126,7 +127,8 @@ bot.hears('Register 📝', async (ctx) => {
             ctx.reply(`📝 ቀደም ሲል ተመዝግበዋል! የአሁን ሂሳብዎ: ${user.balance.toFixed(2)} ETB ነው።`);
         }
     } catch (e) {
-        ctx.reply('❌ ምዝገባ ላይ ችግር ተፈጥሯል።');
+        console.error('Register error:', e);
+        ctx.reply('❌ ምዝገባ ላይ ችግር ተፈጥሯል፣ እባክዎ እንደገና ይሞክሩ።');
     }
 });
 
