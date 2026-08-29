@@ -5,8 +5,13 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { Telegraf, Markup } = require('telegraf');
 
-// Render Environment Variables ውስጥ ያሉትን ቶከን እና ዩአርኤል በቀጥታ ይጠቀማል
-const bot = new Telegraf(process.env.BOT_TOKEN);
+// ቶከኑ መኖሩን እና አለመኖሩን በኮዱ ውስጥ እንፈትሻለን
+const token = process.env.BOT_TOKEN;
+if (!token) {
+    console.error('❌ BOT_TOKEN በ Environment Variables ውስጥ አልተገኘም!');
+}
+
+const bot = new Telegraf(token);
 
 const app = express();
 const server = http.createServer(app);
@@ -64,7 +69,7 @@ app.get('/api/user/:telegramId', async (req, res) => {
 });
 
 // Telegram Bot Handlers
-const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-bingo.onrender.com';
+const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
 
 bot.start((ctx) => {
     ctx.reply(`🎮 እንኳን ወደ Yohans Bingo በደህና መጡ!`, Markup.keyboard([
@@ -106,9 +111,11 @@ bot.hears('Contact Support 📞', (ctx) => {
     ctx.reply(`📞 ለድጋፍ @Yohans_Support ያነጋግሩ።`);
 });
 
-// Launch Telegram Bot
+// Launch Telegram Bot with Error Handling
 bot.launch().then(() => {
     console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል');
+}).catch(err => {
+    console.error('❌ ቦቱን ማስጀመር አልተቻለም (ቶከኑን ይፈትሹ):', err);
 });
 
 // Bingo Game Logic State
