@@ -5,14 +5,6 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { Telegraf, Markup } = require('telegraf');
 
-// ቶከኑ መኖሩን እና አለመኖሩን በኮዱ ውስጥ እንፈትሻለን
-const token = process.env.BOT_TOKEN;
-if (!token) {
-    console.error('❌ BOT_TOKEN በ Environment Variables ውስጥ አልተገኘም!');
-}
-
-const bot = new Telegraf(token);
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -68,7 +60,13 @@ app.get('/api/user/:telegramId', async (req, res) => {
     }
 });
 
-// Telegram Bot Handlers
+// Telegram Bot Setup
+const token = process.env.BOT_TOKEN;
+if (!token) {
+    console.error('❌ BOT_TOKEN በ Environment Variables ውስጥ አልተገኘም!');
+}
+
+const bot = new Telegraf(token);
 const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
 
 bot.start((ctx) => {
@@ -109,13 +107,6 @@ bot.hears('Register 📝', (ctx) => {
 
 bot.hears('Contact Support 📞', (ctx) => {
     ctx.reply(`📞 ለድጋፍ @Yohans_Support ያነጋግሩ።`);
-});
-
-// Launch Telegram Bot with Error Handling
-bot.launch().then(() => {
-    console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል');
-}).catch(err => {
-    console.error('❌ ቦቱን ማስጀመር አልተቻለም (ቶከኑን ይፈትሹ):', err);
 });
 
 // Bingo Game Logic State
@@ -179,6 +170,13 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 ሰርቨር በፖርት ${PORT} እየሰራ ነው`);
+    
+    // ቦቱን ከሰርቨር መነሳት ጋር በአንድ ላይ ማስጀመር
+    bot.launch().then(() => {
+        console.log('🤖 የቴሌግራም ቦቱ በትክክል ተጀምሯል');
+    }).catch(err => {
+        console.error('❌ ቦቱን ማስጀመር አልተቻለም:', err);
+    });
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
