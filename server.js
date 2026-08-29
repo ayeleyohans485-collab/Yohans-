@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// API Routes
+// API Route to fetch user balance inside Mini App
 app.get('/api/user/:telegramId', async (req, res) => {
     try {
         let user = await User.findOne({ telegramId: req.params.telegramId });
@@ -47,7 +47,7 @@ app.get('/api/user/:telegramId', async (req, res) => {
     }
 });
 
-// Telegram Bot Setup
+// Telegram Bot Setup via Webhook for Render
 const token = process.env.BOT_TOKEN;
 const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
 
@@ -63,8 +63,7 @@ bot.start(async (ctx) => {
     try {
         let user = await User.findOne({ telegramId });
         if (user && user.phoneNumber) {
-            // ቀድሞ የተመዘገበ ከሆነ
-            return ctx.reply(`👋 እንኳን ወደ Hamer/Yohans Bingo በደህና መጡ!\n\n💰 የአሁን ሂሳብዎ: ${user.balance.toFixed(2)} ETB`, Markup.keyboard([
+            return ctx.reply(`👋 እንኳን ወደ Yohans Bingo በደህና መጡ!\n\n💰 የአሁን ሂሳብዎ: ${user.balance.toFixed(2)} ETB`, Markup.keyboard([
                 [Markup.button.webApp('🎮 Play Game', webAppUrl)],
                 [Markup.button.text('Check Balance 💰'), Markup.button.text('Deposit 💳')],
                 [Markup.button.text('Withdraw 🏦'), Markup.button.text('Instruction 📖')]
@@ -74,13 +73,12 @@ bot.start(async (ctx) => {
         console.error('Start error:', e);
     }
 
-    // አዲስ ከሆነ ስልክ ቁጥር እንዲያጋራ መጠየቅ
-    ctx.reply(`👋 Welcome to Hamer/Yohans Bingo! To register, please share your phone number using the button below.`, Markup.keyboard([
+    ctx.reply(`👋 Welcome to Yohans Bingo! To register, please share your phone number using the button below.`, Markup.keyboard([
         [Markup.button.contactRequest('📱 Share Contact')]
     ]).resize().oneTime());
 });
 
-// ተጠቃሚው ስልክ ቁጥሩን ሲልክ የሚመዘገብበት ክፍል
+// ተጠቃሚው ስልክ ቁጥሩን ሲልክ የሚመዘገብበት እና 10 ብር ቦነስ የሚሰጥበት ክፍል
 bot.on('contact', async (ctx) => {
     try {
         let telegramId = ctx.from.id.toString();
@@ -89,7 +87,6 @@ bot.on('contact', async (ctx) => {
 
         let user = await User.findOne({ telegramId });
         if (!user) {
-            // አዲስ ዩዘር ሲፈጥር 10 ብር ቦነስ ይሰጠዋል
             await User.create({
                 telegramId,
                 username,
@@ -137,7 +134,7 @@ bot.hears('Withdraw 🏦', (ctx) => {
     ctx.reply(`🏦 ከሂሳብዎ ገንዘብ ለማውጣት የባንክ አካውንት ቁጥርዎን ይላኩ።`);
 });
 
-// Express route for Telegram Webhook
+// Express route for Telegram Webhook with safety timeout catch
 app.use(bot.webhookCallback(`/teleg-webhook/${token}`));
 bot.telegram.setWebhook(`${webAppUrl}/teleg-webhook/${token}`).catch(err => {
     console.log('⚠️ የዌብሁክ ማቀናበር ትንሽ ዘግይቷል:', err.message);
