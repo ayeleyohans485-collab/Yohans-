@@ -34,7 +34,8 @@ const userSchema = new mongoose.Schema({
     playWallet: { type: Number, default: 0.00 },
     referredBy: { type: String, default: null },
     referralCount: { type: Number, default: 0 },
-    pendingAction: { type: String, default: null }
+    pendingAction: { type: String, default: null },
+    depositAmount: { type: Number, default: 0 }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -137,6 +138,9 @@ const token = process.env.BOT_TOKEN;
 const webAppUrl = process.env.WEB_APP_URL || 'https://yohans-vn77.onrender.com';
 const ADMIN_CHAT_ID = '7833077977';
 
+// የእርስዎ የቴሌብር ቁጥር
+const MY_TELEBIRR_PHONE = '0938331486'; 
+
 const bot = new Telegraf(token);
 
 bot.start(async (ctx) => {
@@ -150,7 +154,7 @@ bot.on('contact', async (ctx) => {
     try {
         let phoneNumber = ctx.message.contact ? ctx.message.contact.phone_number : 'Unknown';
 
-        await ctx.telegram.sendMessage(ctx.chat.id, `✅ ምዝገባዎ ተጠናቋል! 10.00 ብር ቦነስ ተሰጥቶዎታል።`, {
+        await ctx.telegram.sendMessage(ctx.chat.id, `✅ ምዝገባዎ ተጠናቋል! ስልክ ቁጥርዎ (${phoneNumber}) ተመዝግቧል እንዲሁም 10.00 ብር ቦነስ ተሰጥቶዎታል።`, {
             reply_markup: { remove_keyboard: true }
         });
 
@@ -160,7 +164,7 @@ bot.on('contact', async (ctx) => {
             [Markup.button.text('Deposit Telebirr 💳'), Markup.button.text('Withdraw Telebirr 🏦')]
         ]).resize());
 
-        User.updateOne(
+        await User.updateOne(
             { telegramId: ctx.from.id.toString() },
             { 
                 $set: { 
@@ -170,7 +174,7 @@ bot.on('contact', async (ctx) => {
                 $setOnInsert: { balance: 10.00, playWallet: 0.00 }
             },
             { upsert: true }
-        ).catch(err => console.log('DB save background error:', err.message));
+        );
 
     } catch (e) {
         console.error('Contact error:', e);
@@ -191,11 +195,29 @@ bot.hears('Check Balance 💰', async (ctx) => {
 });
 
 bot.hears('Deposit Telebirr 💳', async (ctx) => {
-    ctx.reply(`📱 በቴሌብር ሂሳብ ለመሙላት (Deposit):\n\nእባክዎ ከታች ባለው የቴሌብር ቁጥር ገንዘብ ያስተላልፉ:\n🔹 Telebirr: 09xxxxxxxx\n👤 ስም: Yohans Ayele\n\nከፍለው ሲጨርሱ የትራንዛክሽን ሪፈረንስ ቁጥር (Reference No) ወይም የክፍያ ስክሪንሾት ይላኩ።`);
+    try {
+        await User.updateOne(
+            { telegramId: ctx.from.id.toString() },
+            { $set: { pendingAction: 'WAITING_DEPOSIT_AMOUNT' } },
+            { upsert: true }
+        );
+        ctx.reply(`💳 በቴሌብር ሂሳብ ለመሙላት:\n\nእባክዎ ማስገባት የሚፈልጉትን የብር መጠን ቁጥር ብቻ ይጻፉ (ለምሳሌ: 50 ወይም 100):`);
+    } catch (e) {
+        ctx.reply(`⚠️ ስህተት አጋጥሟል እባክዎ እንደገና ይሞክሩ።`);
+    }
 });
 
 bot.hears('Withdraw Telebirr 🏦', async (ctx) => {
-    ctx.reply(`🏦 በቴሌብር ገንዘብ ለማውጣት (Withdraw):\n\nእባክዎ የሚወጣውን መጠን እና የቴሌብር ቁጥርዎን በዚህ መልኩ ይጻፉ (ለምሳሌ: 50 09xxxxxxxx):`);
+    try {
+        await User.updateOne(
+            { telegramId: ctx.from.id.toString() },
+            { $set: { pendingAction: 'WAITING_WITHDRAW_INFO' } },
+            { upsert: true }
+        );
+        ctx.reply(`🏦 በቴሌብር ገንዘብ ለማውጣት (Withdraw):\n\nእባክዎ የሚወጣውን መጠን እና የቴሌብር ቁጥርዎን በዚህ መልኩ ይጻፉ (ለምሳሌ: 50 09xxxxxxxx):`);
+    } catch (e) {
+        ctx.reply(`⚠️ ስህተት አጋጥሟል እባክዎ እንደገና ይሞክሩ።`);
+    }
 });
 
 bot.hears('Referral 🎁', async (ctx) => {
@@ -206,11 +228,102 @@ bot.hears('Referral 🎁', async (ctx) => {
     });
 });
 
+// Text Message Handler
 bot.on('text', async (ctx) => {
-    let text = ctx.message.text;
-    if (text && text.includes('09')) {
-        await bot.telegram.sendMessage(ADMIN_CHAT_ID, `🔔 አዲስ የቴሌብር Withdraw/Deposit ጥያቄ:\n👤 Username: @${ctx.from.username || 'None'}\n🆔 ID: ${ctx.from.id}\n📝 ዝርዝር: ${text}`);
-        return ctx.reply(`✅ ጥያቄዎ ተቀባይነት አግኝቷል! በአጭር ጊዜ ውስጥ ይስተናገዳል።`);
+    let text = ctx.message.text.trim();
+    let userId = ctx.from.id.toString();
+
+    let user = await User.findOne({ telegramId: userId });
+    let action = user ? user.pendingAction : null;
+
+    if (action === 'WAITING_DEPOSIT_AMOUNT') {
+        let amount = parseFloat(text);
+        if (isNaN(amount) || amount <= 0) {
+            return ctx.reply(`⚠️ ትክክለኛ የብር መጠን ያስገቡ (ቁጥር ብቻ ይጻፉ፣ ለምሳሌ: 100)`);
+        }
+
+        await User.updateOne(
+            { telegramId: userId },
+            { 
+                $set: { 
+                    depositAmount: amount, 
+                    pendingAction: 'WAITING_DEPOSIT_RECEIPT' 
+                } 
+            }
+        );
+
+        return ctx.reply(`📱 በቴሌብር አካውንታችን ላይ **${amount} ETB** ያስተላልፉ:\n\n🔹 Telebirr ቁጥር: ${MY_TELEBIRR_PHONE}\n👤 ስም: Yohans Ayele\n\nከፍለው ሲጨርሱ የትራንዛክሽን ሪፈረንስ ቁጥር (Reference No) ወይም የክፍያ ስክሪንሾት እዚህጋ ይላኩ።`);
+    }
+
+    if (action === 'WAITING_DEPOSIT_RECEIPT') {
+        let amount = user.depositAmount || 0;
+        let phone = user.phoneNumber || 'አልታወቀም';
+        let username = ctx.from.username ? `@${ctx.from.username}` : 'username የለውም';
+
+        await bot.telegram.sendMessage(ADMIN_CHAT_ID, 
+            `🔔 <b>አዲስ የቴሌብር ዲፖዚት (Deposit) ጥያቄ!</b>\n\n` +
+            `👤 ስም: ${username}\n` +
+            `🆔 ቴሌግራም ID: ${userId}\n` +
+            `📱 ስልክ ቁጥር: <b>${phone}</b>\n` +
+            `💰 የጠየቀው መጠን: <b>${amount} ETB</b>\n` +
+            `📝 የክፍያ ማረጋገጫ/ደሬሰኝ: ${text}`,
+            { parse_mode: 'HTML' }
+        );
+
+        await User.updateOne(
+            { telegramId: userId },
+            { $set: { pendingAction: null, depositAmount: 0 } }
+        );
+
+        return ctx.reply(`✅ የክፍያ ማረጋገጫዎ በአግባቡ ደርሷል! አድሚኑ አረጋግጦ የሂሳብ መጠንዎን ወዲያውኑ ያስገባልዎታል። እናመሰግናለን!`);
+    }
+
+    if (text.includes('09') && action === 'WAITING_WITHDRAW_INFO') {
+        let phone = user ? user.phoneNumber : 'አልታወቀም';
+        let username = ctx.from.username ? `@${ctx.from.username}` : 'None';
+
+        await bot.telegram.sendMessage(ADMIN_CHAT_ID, 
+            `🔔 <b>አዲስ የቴሌብር Withdraw ጥያቄ:</b>\n` +
+            `👤 Username: ${username}\n` +
+            `🆔 ID: ${userId}\n` +
+            `📱 ስልክ ቁጥር: ${phone}\n` +
+            `📝 ዝርዝር: ${text}`
+        );
+
+        await User.updateOne({ telegramId: userId }, { $set: { pendingAction: null } });
+        return ctx.reply(`✅ የገንዘብ ማውጣት (Withdraw) ጥያቄዎ ተቀባይነት አግኝቷል! በአጭር ጊዜ ውስጥ ይስተናገዳል።`);
+    }
+});
+
+bot.on('photo', async (ctx) => {
+    try {
+        let userId = ctx.from.id.toString();
+        let user = await User.findOne({ telegramId: userId });
+
+        if (user && user.pendingAction === 'WAITING_DEPOSIT_RECEIPT') {
+            let amount = user.depositAmount || 0;
+            let phone = user.phoneNumber || 'አልታወቀም';
+            let username = ctx.from.username ? `@${ctx.from.username}` : 'username የለውም';
+            let photoFileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+
+            await bot.telegram.sendPhoto(ADMIN_CHAT_ID, photoFileId, {
+                caption: `🔔 <b>አዲስ የቴሌብር ዲፖዚት ስክሪንሾት!</b>\n\n` +
+                         `👤 ስም: ${username}\n` +
+                         `🆔 ID: ${userId}\n` +
+                         `📱 ስልክ ቁጥር: <b>${phone}</b>\n` +
+                         `💰 የጠየቀው መጠን: <b>${amount} ETB</b>`,
+                parse_mode: 'HTML'
+            });
+
+            await User.updateOne(
+                { telegramId: userId },
+                { $set: { pendingAction: null, depositAmount: 0 } }
+            );
+
+            return ctx.reply(`✅ የስክሪንሾት ማረጋገጫዎ በአግባቡ ደርሷል! አድሚኑ አረጋግጦ የሂሳብ መጠንዎን ያስገባልዎታል።`);
+        }
+    } catch (e) {
+        console.error('Photo handler error:', e);
     }
 });
 
