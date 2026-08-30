@@ -55,14 +55,25 @@ function resetGame() {
 
 resetGame();
 
-// API Routes
+// API Routes - Get User Data
 app.get('/api/user/:telegramId', async (req, res) => {
-    res.json({ success: true, balance: 10.00, playWallet: 0.00 });
+    try {
+        let user = await User.findOne({ telegramId: req.params.telegramId });
+        if (user) {
+            res.json({ success: true, balance: user.balance, playWallet: user.playWallet });
+        } else {
+            res.json({ success: true, balance: 10.00, playWallet: 0.00 });
+        }
+    } catch (e) {
+        res.json({ success: true, balance: 10.00, playWallet: 0.00 });
+    }
 });
 
+// API Routes - Select Cards & Deduct Stake
 app.post('/api/select-cards', async (req, res) => {
     try {
         let { telegramId, selectedCards } = req.body;
+        
         if (selectedCards && selectedCards.length > 0) {
             if (!activePlayers.includes(telegramId)) {
                 activePlayers.push(telegramId);
@@ -134,12 +145,11 @@ bot.start(async (ctx) => {
     ]).resize().oneTime());
 });
 
-// Share Contact Handler - Instant Response without DB block
+// Share Contact Handler
 bot.on('contact', async (ctx) => {
     try {
         let phoneNumber = ctx.message.contact ? ctx.message.contact.phone_number : 'Unknown';
 
-        // ዳታቤዝ ባይኖርም ወይም ቢዘገይም ወዲያውኑ መልእክቱን እንዲልክ ይደረጋል
         await ctx.telegram.sendMessage(ctx.chat.id, `✅ ምዝገባዎ ተጠናቋል! 10.00 ብር ቦነስ ተሰጥቶዎታል።`, {
             reply_markup: { remove_keyboard: true }
         });
@@ -150,7 +160,6 @@ bot.on('contact', async (ctx) => {
             [Markup.button.text('Deposit Telebirr 💳'), Markup.button.text('Withdraw Telebirr 🏦')]
         ]).resize());
 
-        // ዳታቤዝ ላይ ለመመዝገብ መሞከር (ባይሳካም ቦቱ አያቆምም)
         User.updateOne(
             { telegramId: ctx.from.id.toString() },
             { 
@@ -171,7 +180,14 @@ bot.on('contact', async (ctx) => {
 
 // Menu Handlers
 bot.hears('Check Balance 💰', async (ctx) => {
-    ctx.reply(`💰 የሂሳብዎ ሁኔታ:\n- Main Wallet: 10.00 ETB\n- Play Wallet: 0.00 ETB`);
+    try {
+        let user = await User.findOne({ telegramId: ctx.from.id.toString() });
+        let bal = user ? user.balance : 10.00;
+        let play = user ? user.playWallet : 0.00;
+        ctx.reply(`💰 የሂሳብዎ ሁኔታ:\n- Main Wallet: ${bal.toFixed(2)} ETB\n- Play Wallet: ${play.toFixed(2)} ETB`);
+    } catch (e) {
+        ctx.reply(`💰 የሂሳብዎ ሁኔታ:\n- Main Wallet: 10.00 ETB\n- Play Wallet: 0.00 ETB`);
+    }
 });
 
 bot.hears('Deposit Telebirr 💳', async (ctx) => {
