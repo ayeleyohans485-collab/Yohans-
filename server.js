@@ -151,25 +151,32 @@ bot.start(async (ctx) => {
     }
 });
 
-// Share Contact Handler
+// Share Contact Handler (በትክክል እንዲያነብ የተደረገ ማስተካከያ)
 bot.on('contact', async (ctx) => {
     try {
-        let phoneNumber = ctx.message.contact ? ctx.message.contact.phone_number : 'Unknown';
+        let contact = ctx.message.contact;
+        let phoneNumber = contact && contact.phone_number ? contact.phone_number : 'Unknown';
         let userId = ctx.from.id.toString();
+        let username = ctx.from.username || 'User';
 
-        await User.updateOne(
-            { telegramId: userId },
-            { 
-                $set: { 
-                    username: ctx.from.username || 'User', 
-                    phoneNumber 
+        // ዳታቤዝ ላይ መረጃውን ማስቀመጥ (ሰርቨሩ እንዳይወድቅ try/catch ተካቷል)
+        try {
+            await User.updateOne(
+                { telegramId: userId },
+                { 
+                    $set: { 
+                        username: username, 
+                        phoneNumber: phoneNumber 
+                    },
+                    $setOnInsert: { balance: 10.00, playWallet: 0.00 }
                 },
-                $setOnInsert: { balance: 10.00, playWallet: 0.00 }
-            },
-            { upsert: true }
-        );
+                { upsert: true }
+            );
+        } catch (dbErr) {
+            console.error('DB save error during contact:', dbErr.message);
+        }
 
-        await ctx.telegram.sendMessage(ctx.chat.id, `✅ ምዝገባዎ ተጠናቋል! ስልክ ቁጥርዎ (${phoneNumber}) ተመዝግቧል እንዲሁም 10.00 ብር ቦነስ ተሰጥቶዎታል።`, {
+        await ctx.reply(`✅ ምዝገባዎ ተጠናቋል! ስልክ ቁጥርዎ (${phoneNumber}) ተመዝግቧል እንዲሁም 10.00 ብር ቦነስ ተሰጥቶዎታል።`, {
             reply_markup: { remove_keyboard: true }
         });
 
@@ -181,7 +188,7 @@ bot.on('contact', async (ctx) => {
 
     } catch (e) {
         console.error('Contact error:', e);
-        ctx.reply(`⚠️ ስህተት አጋጥሟል፣ እባክዎ እንደገና ይሞክሩ።`);
+        await ctx.reply(`⚠️ ስህተት አጋጥሟል፣ እባክዎ /start ብለው እንደገና ይሞክሩ።`);
     }
 });
 
@@ -244,7 +251,6 @@ bot.on('text', async (ctx) => {
         let text = ctx.message.text.trim();
         let userId = ctx.from.id.toString();
 
-        // የምናሌ ቁልፎች ከሆነ እንደገና እንዳይደባለቁ መከላከል
         if (text === 'Check Balance 💰' || text === 'Deposit Telebirr 💳' || text === 'Withdraw Telebirr 🏦' || text === 'Referral 🎁') {
             return;
         }
