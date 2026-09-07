@@ -204,7 +204,7 @@ bot.hears('Check Balance 💰', async (ctx) => {
     }
 });
 
-bot.hears(['Deposit Telebirr 💳', 'Deposit Telebirr'], async (ctx) => {
+bot.hears(/(Deposit Telebirr)/i, async (ctx) => {
     try {
         await User.updateOne(
             { telegramId: ctx.from.id.toString() },
@@ -218,7 +218,7 @@ bot.hears(['Deposit Telebirr 💳', 'Deposit Telebirr'], async (ctx) => {
     }
 });
 
-bot.hears(['Withdraw Telebirr 🏦', 'Withdraw Telebirr'], async (ctx) => {
+bot.hears(/(Withdraw Telebirr)/i, async (ctx) => {
     try {
         await User.updateOne(
             { telegramId: ctx.from.id.toString() },
