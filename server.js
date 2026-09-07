@@ -151,7 +151,7 @@ bot.start(async (ctx) => {
     }
 });
 
-// Share Contact Handler (በትክክል እንዲያነብ የተደረገ ማስተካከያ)
+// Share Contact Handler
 bot.on('contact', async (ctx) => {
     try {
         let contact = ctx.message.contact;
@@ -159,7 +159,6 @@ bot.on('contact', async (ctx) => {
         let userId = ctx.from.id.toString();
         let username = ctx.from.username || 'User';
 
-        // ዳታቤዝ ላይ መረጃውን ማስቀመጥ (ሰርቨሩ እንዳይወድቅ try/catch ተካቷል)
         try {
             await User.updateOne(
                 { telegramId: userId },
@@ -205,7 +204,7 @@ bot.hears('Check Balance 💰', async (ctx) => {
     }
 });
 
-bot.hears('Deposit Telebirr 💳', async (ctx) => {
+bot.hears(['Deposit Telebirr 💳', 'Deposit Telebirr'], async (ctx) => {
     try {
         await User.updateOne(
             { telegramId: ctx.from.id.toString() },
@@ -219,7 +218,7 @@ bot.hears('Deposit Telebirr 💳', async (ctx) => {
     }
 });
 
-bot.hears('Withdraw Telebirr 🏦', async (ctx) => {
+bot.hears(['Withdraw Telebirr 🏦', 'Withdraw Telebirr'], async (ctx) => {
     try {
         await User.updateOne(
             { telegramId: ctx.from.id.toString() },
@@ -251,7 +250,7 @@ bot.on('text', async (ctx) => {
         let text = ctx.message.text.trim();
         let userId = ctx.from.id.toString();
 
-        if (text === 'Check Balance 💰' || text === 'Deposit Telebirr 💳' || text === 'Withdraw Telebirr 🏦' || text === 'Referral 🎁') {
+        if (text === 'Check Balance 💰' || text.includes('Deposit Telebirr') || text.includes('Withdraw Telebirr') || text === 'Referral 🎁') {
             return;
         }
 
